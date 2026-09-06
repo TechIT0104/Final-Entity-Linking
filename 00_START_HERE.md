@@ -113,7 +113,28 @@ Shows:
 
 ## 🚀 HOW TO USE THIS PACKAGE
 
-### For Quick Review (5 minutes)
+### 👉 **START HERE: [HOW_TO_USE.md](HOW_TO_USE.md)** (Comprehensive Guide)
+
+This file has:
+- 10 detailed sections with step-by-step instructions
+- Every workflow from review to full reproduction
+- Common tasks and troubleshooting
+- Code structure explanations
+- GPU/CUDA tips
+
+**Quick Navigation in HOW_TO_USE.md:**
+- Section 1: Review Only (5 min)
+- Section 2: Run Evaluation Scripts (15 min)
+- Section 3: Train XGBoost Model (20 min)
+- Section 4: Full Reproduction (2 hours)
+- Section 5: Code Structure (30 min)
+- Sections 6-10: Advanced usage, common tasks, troubleshooting
+
+---
+
+### Alternative Quick Options:
+
+**For Quick Review (5 minutes)**
 ```
 1. Read: QUICKSTART.md
 2. Open: thesis/main.pdf (Chapters 1 & 4)
@@ -121,7 +142,7 @@ Shows:
 ```
 ✓ You now know everything
 
-### For Presentation (15 minutes)
+**For Presentation (15 minutes)**
 ```
 1. Open: thesis/main.pdf
 2. Highlight: XGBoost results in Chapter 4
@@ -130,7 +151,7 @@ Shows:
 ```
 ✓ Supervisor sees your contribution
 
-### For Verification (30 minutes)
+**For Verification (30 minutes)**
 ```
 1. Follow: documentation/SETUP.md
 2. Run: python code/error_analysis_summary.py
@@ -139,11 +160,12 @@ Shows:
 ```
 ✓ All results verified locally
 
-### For Full Reproduction (2 hours)
+**For Full Reproduction (2 hours)**
 ```
-1. Follow: documentation/REPRODUCTION.md
-2. Execute: All commands with expected outputs
-3. Verify: Files match results/
+1. Follow: HOW_TO_USE.md Section 4
+2. Or follow: documentation/REPRODUCTION.md
+3. Execute: All commands with expected outputs
+4. Verify: Files match results/
 ```
 ✓ Complete end-to-end reproducibility
 

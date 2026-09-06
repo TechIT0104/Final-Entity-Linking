@@ -1,0 +1,19 @@
+{
+  "model_name": "microsoft/mrefine-d-base",
+  "model_type": "cross_encoder",
+  "language": "multilingual",
+  "languages_supported": ["en", "de", "fr", "es", "tr", "ar", "fa", "ja", "sr", "it", "sv", "fi"],
+  "num_labels": 2,
+  "device": "cuda",
+  "batch_size": 32,
+  "max_length": 512,
+  "threshold": 0.5,
+  "num_workers": 4,
+  "cache_dir": "~/.cache/huggingface/hub/",
+  "download_url": "https://huggingface.co/microsoft/mrefine-d-base",
+  "model_size_mb": 440,
+  "task": "entity_linking",
+  "use_case": "production",
+  "speed_ranking": "fast",
+  "accuracy_ranking": "medium"
+}

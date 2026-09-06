@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MHEL-LLaMo Paper Reproduction Report</title>
+  <style>
+    :root {
+      --bg: #f6f3ee;
+      --ink: #1f1f1f;
+      --muted: #5a5a5a;
+      --accent: #0f6b7a;
+      --panel: #ffffff;
+      --border: #ded7cd;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: "Georgia", "Times New Roman", serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #f6f3ee 0%, #efe9e0 100%);
+    }
+    header {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+    }
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      letter-spacing: 0.2px;
+    }
+    h2 {
+      margin: 28px 0 12px 0;
+      font-size: 20px;
+      color: var(--accent);
+    }
+    p {
+      margin: 8px 0 12px 0;
+      line-height: 1.5;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    ul { margin: 6px 0 12px 20px; }
+    li { margin: 4px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f1ebe2;
+      font-weight: bold;
+    }
+    .muted { color: var(--muted); }
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #e7f0f2;
+      color: #0f6b7a;
+      font-size: 12px;
+      margin-right: 6px;
+    }
+    .section-note {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    details {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: bold;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>MHEL-LLaMo Paper Reproduction Report</h1>
+    <p class="muted">Generated from existing run artifacts in <code>results/</code>. No new LLM inference was executed for this report.</p>
+    <p class="muted">Date: 2026-05-03</p>
+  </header>
+
+  <h2>What was asked (paper-aligned goals)</h2>
+  <div class="grid">
+    <div class="card">
+      <p><span class="tag">Goal</span> Reproduce the paper best settings and expected output folders.</p>
+      <p><span class="tag">Goal</span> Run all datasets and produce final results.</p>
+      <p><span class="tag">Goal</span> Evaluate honestly and compare with the paper table.</p>
+    </div>
+    <div class="card">
+      <p><span class="tag">Constraint</span> Local Windows machine is CPU-only.</p>
+      <p><span class="tag">Constraint</span> GPU server is shared and can be contended.</p>
+    </div>
+  </div>
+
+  <h2>What we did (implementation and evaluation)</h2>
+  <ul>
+    <li>Implemented a full rerun driver that follows the paper best settings and produces outputs in <code>results/&lt;DATASET&gt;/&lt;RUN_NAME&gt;/</code>.</li>
+    <li>Added resumability and incremental output writing to the prompting scripts to prevent lost progress on interruptions.</li>
+    <li>Added a strict evaluation mode (micro-F1 on gold mentions) alongside the legacy paper metric.</li>
+    <li>Generated two honest summary tables: best-settings comparison and all-runs scan.</li>
+  </ul>
+
+  <h2>Problems encountered and how we solved them</h2>
+  <ul>
+    <li>Broken <code>torchvision::nms</code> import error due to a mismatched torch/torchvision install. Fix: remove torchvision from the LLM env and re-validate transformers pipeline import.</li>
+    <li>Conda/pip environment drift (missing <code>requests</code>/<code>idna</code>) after removals. Fix: reinstall missing deps via <code>python -m pip</code> in the active env or recreate a clean env.</li>
+    <li>GPU contention and OOM on shared RTX 5000 Ada. Fix: resume-capable runs, plus optional memory caps via <code>MHEL_MAX_GPU_MEM</code> and <code>MHEL_MAX_CPU_MEM</code>.</li>
+    <li>Long runtimes under contention. Fix: allow safe stop/restart without losing progress by writing <code>output.csv</code> incrementally.</li>
+  </ul>
+
+  <h2>Evaluation method</h2>
+  <p><strong>Paper/legacy score</strong>: precision-like tp/(tp+fp) computed on joined rows (matches the repo and paper table).</p>
+  <p><strong>Strict micro-F1/accuracy</strong>: correct predictions over all gold mentions (doc_id + start_pos join). This exposes missing gold coverage that the paper metric can hide.</p>
+
+  <h2>Exact paper comparison (best settings)</h2>
+  <p class="section-note">Source: <code>honest_comparison_table.md</code></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Dataset</th>
+        <th>Lang</th>
+        <th>Paper expected</th>
+        <th>Paper score</th>
+        <th>Delta</th>
+        <th>Strict F1</th>
+        <th>Coverage</th>
+        <th>Gold N</th>
+        <th>Pred uniq</th>
+        <th>Pred rows</th>
+        <th>Missing gold</th>
+        <th>Extra pred</th>
+        <th>Run folder</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>HIPE_DE</td><td>de</td><td>0.620</td><td>0.620</td><td>0.000</td><td>0.619</td><td>0.994</td><td>1089</td><td>1083</td><td>1083</td><td>6</td><td>0</td><td>results/HIPE_DE/mistral_24B_chain_median_k30_de</td></tr>
+      <tr><td>HIPE_EN</td><td>en</td><td>0.723</td><td>0.723</td><td>0.000</td><td>0.708</td><td>0.960</td><td>425</td><td>408</td><td>408</td><td>17</td><td>0</td><td>results/HIPE_EN/mistral_24B_chain_k20_en</td></tr>
+      <tr><td>HIPE_FR</td><td>fr</td><td>0.692</td><td>0.692</td><td>-0.000</td><td>0.689</td><td>0.992</td><td>1535</td><td>1522</td><td>1522</td><td>13</td><td>0</td><td>results/HIPE_FR/mistral_24B_van_k20_fr</td></tr>
+      <tr><td>NEWSEYE_DE</td><td>de</td><td>0.556</td><td>0.556</td><td>0.000</td><td>0.555</td><td>0.997</td><td>2230</td><td>2224</td><td>2224</td><td>6</td><td>0</td><td>results/NEWSEYE_DE/mistral_24B_chain_k30_de</td></tr>
+      <tr><td>NEWSEYE_FI</td><td>fi</td><td>0.509</td><td>0.509</td><td>0.000</td><td>0.490</td><td>0.928</td><td>654</td><td>607</td><td>607</td><td>47</td><td>0</td><td>results/NEWSEYE_FI/poro2_8B_chain_k20_fi</td></tr>
+      <tr><td>NEWSEYE_FR</td><td>fr</td><td>0.662</td><td>0.662</td><td>0.000</td><td>0.660</td><td>0.994</td><td>2344</td><td>2329</td><td>2329</td><td>15</td><td>0</td><td>results/NEWSEYE_FR/mistral_24B_chain_median_k20_fr</td></tr>
+      <tr><td>NEWSEYE_SV</td><td>sv</td><td>0.521</td><td>0.521</td><td>0.000</td><td>0.521</td><td>1.000</td><td>587</td><td>587</td><td>587</td><td>0</td><td>0</td><td>results/NEWSEYE_SV/gemma_27B_chain_median_k20_sv</td></tr>
+      <tr><td>AJMC_DE</td><td>de</td><td>0.521</td><td>0.521</td><td>-0.000</td><td>0.509</td><td>0.955</td><td>177</td><td>169</td><td>169</td><td>8</td><td>0</td><td>results/AJMC_DE/mistral_24B_van_k50_de</td></tr>
+      <tr><td>AJMC_EN</td><td>en</td><td>0.496</td><td>0.497</td><td>0.001</td><td>0.489</td><td>0.968</td><td>156</td><td>151</td><td>151</td><td>5</td><td>0</td><td>results/AJMC_EN/mistral_24B_van_k50_en</td></tr>
+      <tr><td>AJMC_FR</td><td>fr</td><td>0.635</td><td>0.635</td><td>0.000</td><td>0.614</td><td>0.935</td><td>214</td><td>200</td><td>200</td><td>14</td><td>0</td><td>results/AJMC_FR/mistral_24B_van_k20_fr</td></tr>
+      <tr><td>MHERCL_EN</td><td>en</td><td>0.700</td><td>0.705</td><td>0.005</td><td>0.705</td><td>1.000</td><td>2311</td><td>2311</td><td>2311</td><td>0</td><td>0</td><td>results/MHERCL_EN/mistral_24B_chain_k20_en</td></tr>
+      <tr><td>MHERCL_IT</td><td>it</td><td>0.698</td><td>0.698</td><td>-0.000</td><td>0.698</td><td>1.000</td><td>2334</td><td>2334</td><td>2334</td><td>0</td><td>0</td><td>results/MHERCL_IT/mistral_24B_chain_k20_it</td></tr>
+    </tbody>
+  </table>
+  <p class="section-note">Summary: paper-score matched within ±0.01 for 12/12 datasets. Strict coverage near 1.0 for 3/12 datasets.</p>
+
+  <h2>Exact comparison for all runs found</h2>
+  <p class="section-note">Source: <code>honest_all_runs_table.md</code></p>
+  <details>
+    <summary>Show all runs table</summary>
+    <table>
+      <thead>
+        <tr>
+          <th>Dataset</th>
+          <th>Run</th>
+          <th>Paper score</th>
+          <th>Strict F1</th>
+          <th>Coverage</th>
+          <th>Gold N</th>
+          <th>Pred uniq</th>
+          <th>Pred rows</th>
+          <th>Missing gold</th>
+          <th>Extra pred</th>
+          <th>Folder</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>AJMC_DE</td><td>mistral_24B_chain_k50_de</td><td>0.485</td><td>0.474</td><td>0.955</td><td>177</td><td>169</td><td>169</td><td>8</td><td>0</td><td>results/AJMC_DE/mistral_24B_chain_k50_de</td></tr>
+        <tr><td>AJMC_DE</td><td>mistral_24B_chain_median_k50_de</td><td>0.479</td><td>0.468</td><td>0.955</td><td>177</td><td>169</td><td>169</td><td>8</td><td>0</td><td>results/AJMC_DE/mistral_24B_chain_median_k50_de</td></tr>
+        <tr><td>AJMC_DE</td><td>mistral_24B_ens_median_k50_de</td><td>0.521</td><td>0.509</td><td>0.955</td><td>177</td><td>169</td><td>169</td><td>8</td><td>0</td><td>results/AJMC_DE/mistral_24B_ens_median_k50_de</td></tr>
+        <tr><td>AJMC_DE</td><td>mistral_24B_van_k50_de</td><td>0.521</td><td>0.509</td><td>0.955</td><td>177</td><td>169</td><td>169</td><td>8</td><td>0</td><td>results/AJMC_DE/mistral_24B_van_k50_de</td></tr>
+        <tr><td>AJMC_EN</td><td>mistral_24B_chain_k50_en</td><td>0.470</td><td>0.463</td><td>0.968</td><td>156</td><td>151</td><td>151</td><td>5</td><td>0</td><td>results/AJMC_EN/mistral_24B_chain_k50_en</td></tr>
+        <tr><td>AJMC_EN</td><td>mistral_24B_chain_median_k50_en</td><td>0.464</td><td>0.456</td><td>0.968</td><td>156</td><td>151</td><td>151</td><td>5</td><td>0</td><td>results/AJMC_EN/mistral_24B_chain_median_k50_en</td></tr>
+        <tr><td>AJMC_EN</td><td>mistral_24B_ens_median_k50_en</td><td>0.477</td><td>0.469</td><td>0.968</td><td>156</td><td>151</td><td>151</td><td>5</td><td>0</td><td>results/AJMC_EN/mistral_24B_ens_median_k50_en</td></tr>
+        <tr><td>AJMC_EN</td><td>mistral_24B_van_k50_en</td><td>0.497</td><td>0.489</td><td>0.968</td><td>156</td><td>151</td><td>151</td><td>5</td><td>0</td><td>results/AJMC_EN/mistral_24B_van_k50_en</td></tr>
+        <tr><td>AJMC_FR</td><td>mistral_24B_chain_k20_fr</td><td>0.570</td><td>0.551</td><td>0.935</td><td>214</td><td>200</td><td>200</td><td>14</td><td>0</td><td>results/AJMC_FR/mistral_24B_chain_k20_fr</td></tr>
+        <tr><td>AJMC_FR</td><td>mistral_24B_chain_median_k20_fr</td><td>0.570</td><td>0.551</td><td>0.935</td><td>214</td><td>200</td><td>200</td><td>14</td><td>0</td><td>results/AJMC_FR/mistral_24B_chain_median_k20_fr</td></tr>
+        <tr><td>AJMC_FR</td><td>mistral_24B_ens_median_k20_fr</td><td>0.600</td><td>0.580</td><td>0.935</td><td>214</td><td>200</td><td>200</td><td>14</td><td>0</td><td>results/AJMC_FR/mistral_24B_ens_median_k20_fr</td></tr>
+        <tr><td>AJMC_FR</td><td>mistral_24B_van_k20_fr</td><td>0.635</td><td>0.614</td><td>0.935</td><td>214</td><td>200</td><td>200</td><td>14</td><td>0</td><td>results/AJMC_FR/mistral_24B_van_k20_fr</td></tr>
+        <tr><td>HIPE_DE</td><td>mistral_24B_chain_k30_de</td><td>0.587</td><td>0.586</td><td>0.994</td><td>1089</td><td>1083</td><td>1083</td><td>6</td><td>0</td><td>results/HIPE_DE/mistral_24B_chain_k30_de</td></tr>
+        <tr><td>HIPE_DE</td><td>mistral_24B_chain_median_k30_de</td><td>0.620</td><td>0.619</td><td>0.994</td><td>1089</td><td>1083</td><td>1083</td><td>6</td><td>0</td><td>results/HIPE_DE/mistral_24B_chain_median_k30_de</td></tr>
+        <tr><td>HIPE_DE</td><td>mistral_24B_ens_median_k30_de</td><td>0.619</td><td>0.617</td><td>0.994</td><td>1089</td><td>1083</td><td>1083</td><td>6</td><td>0</td><td>results/HIPE_DE/mistral_24B_ens_median_k30_de</td></tr>
+        <tr><td>HIPE_DE</td><td>mistral_24B_van_k30_de</td><td>0.616</td><td>0.614</td><td>0.994</td><td>1089</td><td>1083</td><td>1083</td><td>6</td><td>0</td><td>results/HIPE_DE/mistral_24B_van_k30_de</td></tr>
+        <tr><td>HIPE_EN</td><td>mistral_24B_chain_k20_en</td><td>0.723</td><td>0.708</td><td>0.960</td><td>425</td><td>408</td><td>408</td><td>17</td><td>0</td><td>results/HIPE_EN/mistral_24B_chain_k20_en</td></tr>
+        <tr><td>HIPE_EN</td><td>mistral_24B_chain_median_k20_en</td><td>0.686</td><td>0.672</td><td>0.960</td><td>425</td><td>408</td><td>408</td><td>17</td><td>0</td><td>results/HIPE_EN/mistral_24B_chain_median_k20_en</td></tr>
+        <tr><td>HIPE_EN</td><td>mistral_24B_ens_median_k20_en</td><td>0.615</td><td>0.603</td><td>0.960</td><td>425</td><td>408</td><td>408</td><td>17</td><td>0</td><td>results/HIPE_EN/mistral_24B_ens_median_k20_en</td></tr>
+        <tr><td>HIPE_EN</td><td>mistral_24B_van_k20_en</td><td>0.672</td><td>0.658</td><td>0.960</td><td>425</td><td>408</td><td>408</td><td>17</td><td>0</td><td>results/HIPE_EN/mistral_24B_van_k20_en</td></tr>
+        <tr><td>HIPE_FR</td><td>mistral_24B_chain_k20_fr</td><td>0.679</td><td>0.676</td><td>0.992</td><td>1535</td><td>1522</td><td>1522</td><td>13</td><td>0</td><td>results/HIPE_FR/mistral_24B_chain_k20_fr</td></tr>
+        <tr><td>HIPE_FR</td><td>mistral_24B_chain_median_k20_fr</td><td>0.687</td><td>0.684</td><td>0.992</td><td>1535</td><td>1522</td><td>1522</td><td>13</td><td>0</td><td>results/HIPE_FR/mistral_24B_chain_median_k20_fr</td></tr>
+        <tr><td>HIPE_FR</td><td>mistral_24B_ens_median_k20_fr</td><td>0.672</td><td>0.669</td><td>0.992</td><td>1535</td><td>1522</td><td>1522</td><td>13</td><td>0</td><td>results/HIPE_FR/mistral_24B_ens_median_k20_fr</td></tr>
+        <tr><td>HIPE_FR</td><td>mistral_24B_van_k20_fr</td><td>0.692</td><td>0.689</td><td>0.992</td><td>1535</td><td>1522</td><td>1522</td><td>13</td><td>0</td><td>results/HIPE_FR/mistral_24B_van_k20_fr</td></tr>
+        <tr><td>MHERCL_EN</td><td>mistral_24B_chain_k20_en</td><td>0.705</td><td>0.705</td><td>1.000</td><td>2311</td><td>2311</td><td>2311</td><td>0</td><td>0</td><td>results/MHERCL_EN/mistral_24B_chain_k20_en</td></tr>
+        <tr><td>MHERCL_EN</td><td>mistral_24B_chain_median_k20_en</td><td>0.667</td><td>0.667</td><td>1.000</td><td>2311</td><td>2311</td><td>2311</td><td>0</td><td>0</td><td>results/MHERCL_EN/mistral_24B_chain_median_k20_en</td></tr>
+        <tr><td>MHERCL_EN</td><td>mistral_24B_ens_median_k20_en</td><td>0.649</td><td>0.649</td><td>1.000</td><td>2311</td><td>2311</td><td>2311</td><td>0</td><td>0</td><td>results/MHERCL_EN/mistral_24B_ens_median_k20_en</td></tr>
+        <tr><td>MHERCL_EN</td><td>mistral_24B_van_k20_en</td><td>0.703</td><td>0.703</td><td>1.000</td><td>2311</td><td>2311</td><td>2311</td><td>0</td><td>0</td><td>results/MHERCL_EN/mistral_24B_van_k20_en</td></tr>
+        <tr><td>MHERCL_IT</td><td>mistral_24B_chain_k20_it</td><td>0.698</td><td>0.698</td><td>1.000</td><td>2334</td><td>2334</td><td>2334</td><td>0</td><td>0</td><td>results/MHERCL_IT/mistral_24B_chain_k20_it</td></tr>
+        <tr><td>MHERCL_IT</td><td>mistral_24B_chain_median_k20_it</td><td>0.629</td><td>0.629</td><td>1.000</td><td>2334</td><td>2334</td><td>2334</td><td>0</td><td>0</td><td>results/MHERCL_IT/mistral_24B_chain_median_k20_it</td></tr>
+        <tr><td>MHERCL_IT</td><td>mistral_24B_ens_median_k20_it</td><td>0.627</td><td>0.627</td><td>1.000</td><td>2334</td><td>2334</td><td>2334</td><td>0</td><td>0</td><td>results/MHERCL_IT/mistral_24B_ens_median_k20_it</td></tr>
+        <tr><td>MHERCL_IT</td><td>mistral_24B_van_k20_it</td><td>0.685</td><td>0.685</td><td>1.000</td><td>2334</td><td>2334</td><td>2334</td><td>0</td><td>0</td><td>results/MHERCL_IT/mistral_24B_van_k20_it</td></tr>
+        <tr><td>NEWSEYE_DE</td><td>mistral_24B_chain_k30_de</td><td>0.556</td><td>0.555</td><td>0.997</td><td>2230</td><td>2224</td><td>2224</td><td>6</td><td>0</td><td>results/NEWSEYE_DE/mistral_24B_chain_k30_de</td></tr>
+        <tr><td>NEWSEYE_DE</td><td>mistral_24B_chain_median_k30_de</td><td>0.556</td><td>0.555</td><td>0.997</td><td>2230</td><td>2224</td><td>2224</td><td>6</td><td>0</td><td>results/NEWSEYE_DE/mistral_24B_chain_median_k30_de</td></tr>
+        <tr><td>NEWSEYE_DE</td><td>mistral_24B_ens_median_k30_de</td><td>0.444</td><td>0.444</td><td>0.997</td><td>2230</td><td>2224</td><td>2224</td><td>6</td><td>0</td><td>results/NEWSEYE_DE/mistral_24B_ens_median_k30_de</td></tr>
+        <tr><td>NEWSEYE_DE</td><td>mistral_24B_van_k30_de</td><td>0.488</td><td>0.487</td><td>0.997</td><td>2230</td><td>2224</td><td>2224</td><td>6</td><td>0</td><td>results/NEWSEYE_DE/mistral_24B_van_k30_de</td></tr>
+        <tr><td>NEWSEYE_FI</td><td>poro2_8B_chain_k20_fi</td><td>0.509</td><td>0.490</td><td>0.928</td><td>654</td><td>607</td><td>607</td><td>47</td><td>0</td><td>results/NEWSEYE_FI/poro2_8B_chain_k20_fi</td></tr>
+        <tr><td>NEWSEYE_FI</td><td>poro2_8B_chain_median_k20_fi</td><td>0.479</td><td>0.462</td><td>0.928</td><td>654</td><td>607</td><td>607</td><td>47</td><td>0</td><td>results/NEWSEYE_FI/poro2_8B_chain_median_k20_fi</td></tr>
+        <tr><td>NEWSEYE_FI</td><td>poro2_8B_ens_median_k20_fi</td><td>0.453</td><td>0.436</td><td>0.928</td><td>654</td><td>607</td><td>607</td><td>47</td><td>0</td><td>results/NEWSEYE_FI/poro2_8B_ens_median_k20_fi</td></tr>
+        <tr><td>NEWSEYE_FI</td><td>poro2_8B_van_k20_fi</td><td>0.470</td><td>0.452</td><td>0.928</td><td>654</td><td>607</td><td>607</td><td>47</td><td>0</td><td>results/NEWSEYE_FI/poro2_8B_van_k20_fi</td></tr>
+        <tr><td>NEWSEYE_FR</td><td>mistral_24B_chain_k20_fr</td><td>0.647</td><td>0.645</td><td>0.994</td><td>2344</td><td>2329</td><td>2329</td><td>15</td><td>0</td><td>results/NEWSEYE_FR/mistral_24B_chain_k20_fr</td></tr>
+        <tr><td>NEWSEYE_FR</td><td>mistral_24B_chain_median_k20_fr</td><td>0.662</td><td>0.660</td><td>0.994</td><td>2344</td><td>2329</td><td>2329</td><td>15</td><td>0</td><td>results/NEWSEYE_FR/mistral_24B_chain_median_k20_fr</td></tr>
+        <tr><td>NEWSEYE_FR</td><td>mistral_24B_ens_median_k20_fr</td><td>0.584</td><td>0.582</td><td>0.994</td><td>2344</td><td>2329</td><td>2329</td><td>15</td><td>0</td><td>results/NEWSEYE_FR/mistral_24B_ens_median_k20_fr</td></tr>
+        <tr><td>NEWSEYE_FR</td><td>mistral_24B_van_k20_fr</td><td>0.593</td><td>0.591</td><td>0.994</td><td>2344</td><td>2329</td><td>2329</td><td>15</td><td>0</td><td>results/NEWSEYE_FR/mistral_24B_van_k20_fr</td></tr>
+        <tr><td>NEWSEYE_SV</td><td>gemma_27B_chain_k20_sv</td><td>0.518</td><td>0.518</td><td>1.000</td><td>587</td><td>587</td><td>587</td><td>0</td><td>0</td><td>results/NEWSEYE_SV/gemma_27B_chain_k20_sv</td></tr>
+        <tr><td>NEWSEYE_SV</td><td>gemma_27B_chain_median_k20_sv</td><td>0.521</td><td>0.521</td><td>1.000</td><td>587</td><td>587</td><td>587</td><td>0</td><td>0</td><td>results/NEWSEYE_SV/gemma_27B_chain_median_k20_sv</td></tr>
+        <tr><td>NEWSEYE_SV</td><td>gemma_27B_ens_median_k20_sv</td><td>0.504</td><td>0.504</td><td>1.000</td><td>587</td><td>587</td><td>587</td><td>0</td><td>0</td><td>results/NEWSEYE_SV/gemma_27B_ens_median_k20_sv</td></tr>
+        <tr><td>NEWSEYE_SV</td><td>gemma_27B_van_k20_sv</td><td>0.504</td><td>0.504</td><td>1.000</td><td>587</td><td>587</td><td>587</td><td>0</td><td>0</td><td>results/NEWSEYE_SV/gemma_27B_van_k20_sv</td></tr>
+      </tbody>
+    </table>
+  </details>
+
+  <h2>Conclusion</h2>
+  <p>The legacy paper metric matches the reported paper scores for all 12 best-setting runs. The strict micro-F1 exposes missing gold coverage in several datasets, most notably NEWSEYE_FI, AJMC_FR, and HIPE_EN.</p>
+</body>
+</html>
