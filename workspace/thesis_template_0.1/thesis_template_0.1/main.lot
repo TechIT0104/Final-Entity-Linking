@@ -1,0 +1,15 @@
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {4.1}{\ignorespaces Hardware and software configuration for reproduction runs.}}{12}{table.caption.59}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Critical fixes applied during reproduction.}}{13}{table.caption.61}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces mReFinED MEWSLI-9 results (reproduced).}}{16}{table.caption.91}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces Key tuned parameters used in post-mid runs.}}{18}{table.caption.96}%
+\contentsline {table}{\numberline {4.5}{\ignorespaces MHEL-LLaMo best-setting results (reproduced).}}{21}{table.caption.133}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {B.1}{\ignorespaces MEWSLI-9 per-language metrics (reproduced).}}{26}{table.caption.155}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {C.1}{\ignorespaces Best-settings results with strict evaluation.}}{27}{table.caption.158}%

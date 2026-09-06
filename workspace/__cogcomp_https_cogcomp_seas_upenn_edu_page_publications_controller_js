@@ -1,0 +1,299 @@
+/**
+ * this is probably the most complex file in the entire revamp site.
+ * tread lightly when editing this file, I'm afraid.
+ *
+ * overall behavior:
+ * this script interprets button presses from the html page as
+ * edits to a default json structure, which keeps track of which buttons are
+ * pressed. every time a button is pressed, or anything changes, this structure
+ * is recompiled into a string, which is eval()'d into a condition which angular
+ * knows how to check against.
+ *
+ * sorry for using eval(). eval is evil.
+ */
+
+
+/**
+ * A simple function to check whether or not an array contains a given object.
+ * Easier than redefining Javascript's implicit Array class. I think.
+ *
+ * @param {array} array
+ * @param {element} obj
+ * @return {bool} - whether or not the element exists in the array
+ */
+function contains(array, elem) {
+    var i = array.length;
+    while (i--) {
+        if (array[i] === elem) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+/**
+ * Returns an array of specified length full of zeroes.
+ *
+ * some nasty business here. we define an Array of length val + 2,
+ * instead of length val, like usual. one of these offsets serves as a
+ * placeholder, and the other serves as a spacer. this is the result of two
+ * adjunct off-by-one errors. programming is the worst.
+ *
+ * @param {int} val - the length of the array
+ * @return {array} - the array to return
+ */
+function zeroes(val) {
+    return new Array(val + 2).join('0').split('').map(parseFloat);
+}
+
+
+/**
+ * compiles the $scope.selected structure into a $scope.condition string
+ * lazy and manual, sorry.
+ *
+ * @param {Number} a
+ * @param {Number} b
+ * @return {Number} sum
+ */
+function compile(selected) {
+    var bool = [
+        [],
+        [],
+        [],
+        []
+    ];
+    var queryStack = [];
+    for (var i = 1; i < selected.topics.array.length; i++) {
+        if (selected.topics.array[i] == 1) {
+            bool[0].push("(contains(item.topics.split(','), '" + i + "'))");
+        }
+    }
+    for (var i = 1; i < selected.venues.array.length; i++) {
+        if (selected.venues.array[i] == 1) {
+            bool[1].push("(item.venues == " + i + ")");
+        }
+    }
+    for (var i = 1; i < selected.categories.array.length; i++) {
+        if (selected.categories.array[i] == 1) {
+            bool[2].push("(item.categories == " + i + ")");
+        }
+    }
+    for (var i = 1; i < selected.years.array.length; i++) {
+        if (selected.years.array[i] == 1) {
+            bool[3].push("(item.years == " + (1990 + i) + ")");
+        }
+    }
+    for (var i = 0; i < 4; i++) {
+        if (bool[i].length != 0) {
+            queryStack.push("(" + bool[i].join(" || ") + ")");
+        }
+    }
+
+    return queryStack.join(" && ");
+}
+
+
+/**
+ * Embarassingly simple boolean swap function
+ * @param {int} val
+ * @return {int} the opposite
+ */
+function swap(val) {
+    return val == 1 ? 0 : 1;
+}
+
+
+/**
+ * the default array, which defines which of the advanced search options are
+ * clicked. we use magic numbers here, due to how slowly this sort of thing
+ * changes. sorry.
+ *
+ * the years structure is only good through year 2050 (offset 2000 years).
+ * this code was written in 2014. if you're still reading this in
+ * the year 2050, sorry again.
+ */
+var selected = {
+    "topics": {
+        "all": 1,
+        "array": zeroes(8)
+    }, //eight topics
+    "venues": {
+        "all": 1,
+        "array": zeroes(6)
+    }, //six venues
+    "categories": {
+        "all": 1,
+        "array": zeroes(8)
+    }, //etc
+    "years": {
+        "all": 1,
+        "array": zeroes(50)
+    }
+};
+
+function getURLParameter(name) {
+  return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
+}
+
+var app = angular.module('getPublications', ['getNav', 'hoverStuff', 'ngSanitize']);
+
+app.controller('getPublicationsController', function($scope, $http) {
+    $http.get("backend.php").success(function(data) {
+        $scope.data = data;
+        console.log(data);
+        $scope.selected = $.extend(true, {}, selected); //deep copy
+        //whether or not to show the Representative Publications div
+        $scope.representative = true;
+
+        $scope.showAdvanced = false;
+
+        /**
+         * when a button is clicked, the structure changes
+         * and then the entire structure is reevaluated and
+         * compiled into a string, which Angular uses to filter
+         *
+         * if the button pressed isn't `all', deactive `all'
+         * and edit accordingly
+         *
+         * if the button pressed IS `all', replace that specific part of the
+         * array with a DEEP COPY of the original
+         *
+         * @param {string} crit - the criteria to filter by (e.g., venue, topic, etc.)
+         * @param {} val - whether or not the button clicked is 'All'
+         * @param {} idx - the index of the button clicked
+         *
+         * @return {-} writes the compiled string to `$scope.condition'
+         */
+        $scope.click = function(crit, val, idx) {
+            $scope.representative = false;
+
+            if (val != 'all') {
+                $scope.selected[crit]['all'] = 0;
+                $scope.selected[crit].array[idx] = swap(
+                    $scope.selected[crit].array[idx]
+                );
+            }
+
+            if (val == 'all') {
+                $scope.selected[crit] = $.extend(true, {}, selected[crit]);
+            }
+
+            $scope.condition = compile($scope.selected); //recompile string
+        }
+
+        /**
+         * this is the condition array, which gets changed on every $scope.click().
+         * very useful to console.log().
+         * will ultimately be of the form `(1) && (1) && (1) && ((item.years == 2013) || (item.years == 2014))'
+         */
+        $scope.condition = "1";
+
+        $scope.localComparator = function(item) {
+
+            var a=-1;
+
+            switch(item.booktitle){
+              case 'TACL':
+                a=24;
+                break;
+	      case 'NeurIPS':
+		a=23;
+		break;
+              case 'AACL':
+                a=22;
+                break;
+              case 'EMNLP':
+                a=21;
+                break;
+              case 'EMNLP-Findings':
+                a=20;
+                break;
+              case 'EMNLP-Industry':
+                a=19;
+                break;
+              case 'IJCAI':
+                a=18;
+                break;
+              case 'COLM':
+                a=17;
+                break;
+              case 'ECCV':
+                a=16;
+                break;
+              case 'ICML':
+                a=15;
+                break;
+              case '*SEM':
+                a=14;
+                break;
+              case 'ACL':
+                a=13;
+                break;
+              case 'ACL-Findings':
+                a=12;
+                break;
+              case 'ACL Industry':
+                a=11;
+                break;
+              case 'CVPR':
+                a=10;
+                break;
+              case 'NAACL':
+                a=9;
+                break;
+              case 'NAACL-Findings':
+                a=8;
+                break;
+              case 'NAACL Industry':
+                a=7;
+                break;
+              case 'COLING':
+                a=6;
+                break;
+              case 'CoNLL':
+                a=5;
+                break;
+              case 'ICLR':
+                a=4;
+                break;
+              case 'EACL':
+                a=3;
+                break;
+              case 'AAAI':
+                a=2;
+                break;
+              case 'IAAI':
+                a=1;
+                break;
+            }
+
+            return -item.years*100-a;
+        };
+        /**
+         * used by Angular to perform search filtering
+         *
+         * @param {??} item - of uncertain utility, but breaks without it.
+         */
+        $scope.match = function(item) {
+            if ($scope.condition == "") {
+                return true;
+            } else {
+                if (eval($scope.condition)) {
+                    return true;
+                }
+                return false;
+            }
+        };
+
+        /*
+          Used by the home page to navigate to a specific topic
+        */
+        selected_topic = getURLParameter('topic');
+        if(selected_topic != null && parseInt(selected_topic) <= data.topics.length){
+          $scope.click('topics', '', parseInt(selected_topic));
+          // HACK to change the url back to what it is originally - first two parameters don't matter
+          window.history.pushState('Publications', 'CogComp', '/page/publications/');
+        }
+    });
+});

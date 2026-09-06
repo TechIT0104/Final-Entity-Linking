@@ -1,0 +1,30 @@
+\chapter{MHEL-LLaMo Honest Evaluation Summary}
+\label{AppendixC}
+
+This appendix summarizes the honest evaluation report, which compares the legacy paper score with strict micro-$F_1$.
+
+\begin{table}[ht]
+\centering
+\caption{Best-settings results with strict evaluation.}
+\begin{tabular}{lccc}
+\hline
+Dataset & Paper Score & Strict F1 & Coverage \\
+\hline
+HIPE\_DE & 0.620 & 0.619 & 0.994 \\
+HIPE\_EN & 0.723 & 0.708 & 0.960 \\
+HIPE\_FR & 0.692 & 0.689 & 0.992 \\
+NEWSEYE\_DE & 0.556 & 0.555 & 0.997 \\
+NEWSEYE\_FI & 0.509 & 0.490 & 0.928 \\
+NEWSEYE\_FR & 0.662 & 0.660 & 0.994 \\
+NEWSEYE\_SV & 0.521 & 0.521 & 1.000 \\
+AJMC\_DE & 0.521 & 0.509 & 0.955 \\
+AJMC\_EN & 0.497 & 0.489 & 0.968 \\
+AJMC\_FR & 0.635 & 0.614 & 0.935 \\
+MHERCL\_EN & 0.705 & 0.705 & 1.000 \\
+MHERCL\_IT & 0.698 & 0.698 & 1.000 \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Notes}
+Legacy paper scores can mask coverage gaps. Strict evaluation highlights missing predictions in datasets with lower coverage (e.g., NEWSEYE\_FI).

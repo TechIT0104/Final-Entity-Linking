@@ -1,0 +1,59 @@
+\chapter{Methods}
+\label{ch:methods}
+
+\section{Phase I: Monolingual Entity Linking}
+\subsection{BLINK Baseline}
+We implemented the BLINK pipeline to establish a dense retrieval baseline. The workflow consisted of:
+\begin{enumerate}
+    \item mention detection using a NER component,
+    \item bi-encoder retrieval to produce top-$K$ candidates,
+    \item cross-encoder re-ranking for final selection.
+\end{enumerate}
+BLINK served as a reference system for candidate recall and latency trade-offs \cite{wu2020blink}.
+
+\subsection{Multi-View Enhanced Distillation (MVD)}
+We implemented the MVD training and evaluation flow using the provided scripts for ZESEHL and Wikipedia-based datasets \cite{mvd2023}. The method constructs multiple entity views (e.g., description fragments) and distills the cross-encoder distribution into the student bi-encoder. We followed the published stages: warmup retriever, hard negative mining, teacher training, and multi-view distillation.
+
+\section{Phase II: Multilingual Entity Linking}
+\subsection{mReFinED Reproduction Plan}
+mReFinED integrates mention detection and disambiguation in a multilingual setting with a bootstrapped MD framework \cite{mrefined2023}. We reproduced the MEWSLI-9 benchmark using the provided model checkpoints and multilingual assets. The evaluation pipeline consists of:
+\begin{enumerate}
+    \item dataset loading per language,
+    \item mention detection and span normalization,
+    \item candidate generation using entity priors (PEM) and description embeddings,
+    \item final disambiguation scoring with entity typing signals.
+\end{enumerate}
+
+\subsection{Reproduction Fixes and Compatibility Patches}
+We applied a set of compatibility fixes to achieve successful runs:
+\begin{itemize}
+    \item CUDA stack mismatch resolved by installing a compatible PyTorch build (cu128).
+    \item Tokenizer API modernized to use `tokenizer()` instead of deprecated `encode_plus()`.
+    \item PEM data format robustified to support both dict and list payloads.
+    \item Explicit device placement via `--device cuda:0` and unbuffered logging for visibility.
+    \item Dataset root argument added to prevent path resolution failures.
+\end{itemize}
+These changes enabled a full MEWSLI-9 evaluation run and produced reproducible metrics.
+
+\subsection{TR2016 Offset Validation Fix}
+We discovered corrupted mention offsets in TR2016. A validation filter was introduced in the evaluation pipeline to skip mentions whose extracted span text mismatched the annotated mention text. This yielded a significant recall uplift on German and revealed the remaining performance gap to paper results, indicating further data quality issues.
+
+\section{MHEL-LLaMo Implementation}
+MHEL-LLaMo is an unsupervised ensemble that combines a bi-encoder retriever (BELA) with an instruction-tuned LLM for candidate selection and NIL prediction \cite{mhelllamo2026}. We implemented the pipeline as follows:
+\begin{enumerate}
+    \item BELA retrieves top-$K$ candidates with confidence scores.
+    \item If confidence $\ge \tau$, the SLM prediction is accepted directly.
+    \item If confidence $< \tau$, an LLM prompt chain performs NIL prediction and candidate selection.
+\end{enumerate}
+We reproduced best settings on multiple historical datasets using fixed thresholds and candidate counts from the paper, and generated strict evaluation reports for both legacy and strict metrics.
+
+\subsection{Pipeline Improvements}
+Based on the repository notes, we incorporated additional robustness improvements:
+\begin{itemize}
+    \item \textbf{Retriever indexing fix:} corrected the candidate retrieval indexing by tracking only valid mentions when mapping FAISS outputs, preventing out-of-range errors in batched retrieval.
+    \item \textbf{RAG extension:} added a lightweight retrieval-augmented pipeline with cross-encoder re-ranking and context augmentation to improve candidate quality for difficult datasets.
+    \item \textbf{Evaluation transparency:} generated honest comparison tables reporting both paper legacy scores and strict micro-$F_1$ to surface coverage gaps.
+\end{itemize}
+
+\section{Evaluation Metrics}
+We report precision, recall, and $F_1$ for end-to-end EL, and also capture retrieval recall where applicable. For MHEL-LLaMo we report both the paper legacy score (precision over matched mentions) and strict micro-$F_1$ (correct predictions over all gold mentions) to ensure transparency.

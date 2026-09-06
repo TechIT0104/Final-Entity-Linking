@@ -1,0 +1,1051 @@
+﻿It’s All About the Confidence: An Unsupervised Approach for Multilingual
+Historical Entity Linking using Large Language Models
+
+Cristian Santini1,3, Marieke van Erp2, Mehwish Alam3
+1Department of Humanities, University of Macerata, Italy,
+
+2KNAW Humanities Cluster, DHLab, Amsterdam, the Netherlands,
+3INFRES Department, Télécom Paris, France,
+
+Correspondence: c.santini12@unimc.it, marieke.van.erp@dh.huc.knaw.nl, mehwish.alam@telecom-paris.fr,
+
+Abstract Dietze, 2024; Santini et al., 2024a), media moni-
+toring (Chen et al., 2022), and artwork and motif
+
+Despite the recent advancements in NLP with recognition (Santini et al., 2022; Sierra-Múnera
+the advent of Large Language Models (LLMs), et al., 2024).
+Entity Linking (EL) for historical texts remains
+challenging due to linguistic variation, noisy Despite the remarkable performance of EL sys-
+inputs, and evolving semantic conventions. Ex- tems on contemporary benchmarks (De Cao et al.,
+isting solutions either require substantial train- 2022; Plekhanov et al., 2023; Limkonchotiwat
+ing data or rely on domain-specific rules that et al., 2023), this task remains challenging with
+limit scalability. In this paper, we present historical texts due to complex document vari-
+MHEL-LLaMo (Multilingual Historical En- eties, noisy inputs, multilinguality, and evolving
+tity Linking with Large Language MOdels1), syntactic and semantic conventions.2 Some ap-
+an unsupervised ensemble approach combin- proaches have been proposed to adapt EL systems
+ing a Small Language Model (SLM) and an
+LLM. MHEL-LLaMo leverages a multilingual to deal with historical documents, relying either
+bi-encoder (BELA) for candidate retrieval and on supervised architectures (Linhares Pontes et al.,
+an instruction-tuned LLM for NIL prediction 2022) that need training data and careful parame-
+and candidate selection via prompt chaining. ter tuning or rule-based constraints which do not
+Our system uses SLM’s confidence scores to scale well across different domains (Labusch and
+discriminate between easy and hard samples, Neudecker, 2020). More recently, Large Language
+applying an LLM only for hard cases. This Models (LLMs) have been used to perform EL on
+strategy reduces computational costs while pre-
+venting hallucinations on straightforward cases. historical texts with zero-shot prompting (Boscar-
+We evaluate MHEL-LLaMo on four established iol et al., 2024; Graciotti et al., 2025b); however,
+benchmarks in six European languages (En- the results obtained are still inferior to those of
+glish, Finnish, French, German, Italian and supervised domain-specific approaches (Labusch
+Swedish) from the 19th and 20th centuries. Re- and Neudecker, 2020; Boros et al., 2020; Lin-
+sults demonstrate that MHEL-LLaMo outper- hares Pontes et al., 2022).
+forms state-of-the-art models without requiring The goal of this paper is to perform Multilingual
+fine-tuning, offering a scalable solution for low- Historical Entity Linking (MHEL) in an unsuper-
+resource historical EL. The implementation of
+MHEL-LLaMo is available on Github. vised way by using LLMs in combination with a
+
+Small Language Model (SLM). Specifically, we
+1 Introduction use BELA (Plekhanov et al., 2023), a multilingual
+
+XLM-R-based bi-encoder (Conneau et al., 2020)
+Entity Linking (EL) is a crucial Information Ex- for retrieving a set of candidates from Wikidata sim-
+traction (IE) task, allowing researchers to automat- ilar to a given mention. Then, we leverage prompt
+ically trace and link references to named entities chaining to guide an LLM in either selecting the
+to external Knowledge Bases (KBs) for semantic most plausible candidate from the set of Wikidata
+enrichment, document indexing, and linking to ex- entities or predicting a NIL entity when no can-
+ternal sources. EL has been used in a variety of use didate corresponds to the entity referenced in the
+cases, such as social network analysis (Groth and text. Based on the findings of Ma et al. (2023), we
+
+1This acronym was chosen because its pronunciation re- 2For more details and examples, a comprehensive survey
+sembles the Spanish phrase “Me llamo”, which means “My of IE tasks in historical texts has been presented in (Ehrmann
+name is”, a common way to declare someone’s identity. et al., 2023).
+
+1
+
+arXiv:2601.08500v1  [cs.CL]  13 Jan 2026
+
+
+
+investigate how confidence scores returned by the 2.1 Neural Approaches for MHEL
+SLM may improve the performance of LLMs by
+allowing them to discriminate between easy and Historical texts present important challenges for EL
+hard samples. The main hypothesis of this work is systems due to the complexity of historical texts,
+that using LLMs only for hard samples to refine the the presence of OCR errors, and the high frequency
+bi-encoder’s results provides a threefold advantage: of NIL entities, i.e., entities that do not appear in a
+
+KB. To solve these problems, several specialized
+1. The background knowledge of LLMs is lever- MHEL systems have been proposed in recent years.
+
+aged to deal with complex named entity men- SBB (Labusch and Neudecker, 2020) is a multi-
+tions; lingual framework supporting English, German,
+
+and French languages, structured around three core
+2. By keeping the bi-encoder’s results for easy modules: (1) candidate retrieval using word embed-
+
+samples, LLMs are prevented from hallucinat- dings and k-NN search on Wikipedia titles, with
+ing on simple cases; temporal filtering based on document publication
+
+dates and Wikidata information; (2) candidate eval-
+3. By using LLMs only for hard samples, energy uation via BERT-based similarity scoring between
+
+costs for model inference are minimized. mention contexts and Wikipedia entity sentences;
+
+Therefore, the main contribution of this work is and (3) candidate re-ranking using Random For-
+
+to propose an unsupervised ensemble architecture est classification on combined similarity scores.
+
+for MHEL called MHEL-LLAMO ( Despite the originality of this work, the proposed
+Multilingual
+
+approach has potential disadvantages due to the
+Historical Entity Linking with Large Language
+MOdels), where an LLM performs sequential NIL use of Wikidata information for filtering candidates
+
+prediction and candidate selection over a block before retrieval, which may lead to a higher false
+
+of entities returned by a bi-encoder only for hard negative rate.
+
+samples, i.e., when confidence scores of the bi- The L3i system (Boros et al., 2020) also presents
+encoder do not reach a minimum threshold. To a neural approach for MHEL on English, French,
+prove the effectiveness of our approach, we test and German. This method builds upon the end-
+both a vanilla combination of BELA with LLMs to-end EL framework of Kolitsas et al. (2018) by
+and our ensemble solution MHEL-LLAMO on sev- adding three key enhancements: an OCR error cor-
+eral datasets with texts spanning from the 19th to rection module, a cross-lingual vector index de-
+the 20th century written in six languages (English, rived from multilingual Wikipedia entity represen-
+Finnish, French, German, Italian and Swedish). tations, and post-processing heuristics that rerank
+
+Our empirical findings show that MHEL- candidates and identify NIL entities using DBpe-
+LLAMO outperforms most of the specialized mod- dia information. Building on this foundation, Lin-
+els for MHEL and suggest that adaptively us- hares Pontes et al. (2022) introduced MELHISSA,
+ing LLMs via prompt chaining to refine the bi- an enhanced version of the L3i system also applied
+encoder’s results leads to robust performance on to Swedish and Finnish. MELHISSA extends L3i
+multilingual historical texts belonging to different by incorporating 18 specialized post-processing
+genres and represents a novel solution to democ- filters for candidate reranking and NIL entity pre-
+ratize access to advanced IE techniques for low- diction, utilizing string distance metrics such as
+resource historical languages. To the best of our Levenshtein distance alongside information from
+knowledge, this is the first successful attempt to both Wikidata and DBpedia. Despite MELHISSA
+use LLMs to adapt general-purpose EL systems and L3i’s robust performance across the HIPE-
+to historical texts. Datasets, source code and pre- 2020 (Ehrmann et al., 2020) and NewsEye (Hamdi
+trained models are publicly available to enhance et al., 2021) datasets, their extensive reliance on
+reproducibility.3 rule-based parameters and training data creates re-
+
+producibility challenges in the absence of large
+2 Related Work annotated datasets and extensive empirical tests.
+
+To overcome the limitations of the approaches
+In this section, we discuss related work on histori- herein described, this work proposes to leverage the
+cal IE and EL. background knowledge of LLMs to perform NIL
+
+3https://github.com/sntcristian/MHEL-LLAMO. prediction and candidate selection in MHEL in an
+
+2
+
+
+
+Figure 1: Overview of the MHEL-LLaMo architecture. The system combines BELA’s bi-encoder for candidate
+retrieval, a KB consisting of a Faiss Index, and a lookup table for returning similar candidates from Wikidata
+with metadata, an adaptive threshold to filter easy samples and an instruction-tuned LLM for NIL prediction and
+candidate selection for hard samples.
+
+unsupervised way. While these models notably GliNER (Zaratiana et al., 2024) architecture for
+suffer from hallucinations, which may limit their NER on a corpus of 19th-century Italian philolog-
+efficiency in retrieving the correct candidate from ical texts. The main insight of this research was
+Wikidata with a zero-shot approach, our idea is to to show that LLMs exhibit important biases in the
+adopt a pre-trained multilingual bi-encoder model recognition of named entities, underperforming on
+for candidate retrieval. Further, we frame the NIL domain-specific classes such as bibliographic refer-
+prediction and candidate selection tasks as multiple- ences. Moreover, Graciotti et al. (2025b) presented
+choice question-answering tasks for LLMs, an ac- a novel benchmark study on multilingual histor-
+tivity for which instruction-tuned agents are thor- ical music periodicals where they tested GPT-4o
+oughly trained. mini and LLaMa3-70B in NER and EL with zero-
+
+shot prompting. While the results show how large
+2.2 Historical IE with LLMs instruction-tuned models surpass 50% of accuracy
+
+Since the advent of LLMs, numerous approaches in both tasks using zero-shot prompting, the study
+
+of these models for IE tasks on historical texts also emphasizes that these models perform poorly
+
+have been investigated. In González-Gallardo et al. on long-tail entities, i.e., entities which occur less
+
+(2023, 2024), ChatGPT (Brown et al., 2020), and frequently in web-crawled corpora. To the best of
+
+open-source LLMs (including LLaMa2 & 3, Mis- our knowledge, MHEL-LLaMo is the first success-
+
+tral and Zephyr) were used in zero-shot prompting ful attempt to apply LLMs for MHEL.
+
+for Named Entity Recognition (NER) on the his- 3 Methodology
+torical corpus HIPE-2022 (Ehrmann et al., 2022).
+While the experiments show that LLMs are gener- MHEL-LLaMo is based on three main compo-
+ally capable of understanding IE instructions and nents:
+recognizing simple classes of entities (e.g., person 1. A candidate retrieval module based on
+and location), they present notable issues due to BELA (Plekhanov et al., 2023);
+the necessity of adopting post-processing strategies
+to control output formatting and remove instances 2. A lookup table containing structured metadata
+of new classes of entities not present in the bench- about Wikidata entities, stored in an SQLite
+mark. database;
+
+Recently, Santini et al. (2024b) compared 3. An instruction-tuned LLM which performs
+open-source LLMs with models based on the NIL prediction and candidate selection based
+
+3
+
+
+
+on a textual mention of an entity and a set of and candidate selection by evaluating the similarity
+similar Wikidata candidates returned by the between a text mention and each Wikidata candi-
+retrieval module. date returned by the bi-encoder. The choice of
+
+A high-level representation of the approach is LLM was guided by two criteria: (1) strong perfor-
+presented in Figure 1. mance on the target languages as reported by the
+
+EuroEval benchmark4, and (2) interoperability with
+3.1 Candidate Retrieval the Hugging Face Transformers library to ensure in-
+For candidate retrieval, BELA’s XLM-R bi-encoder teroperability. Based on these criteria, we selected
+is used to encode an entity mention and its sur- Mistral-Small-24B-Instruct5 for texts in English,
+rounding context in a mention embedding (Con- French, German, and Italian, Gemma-3-27B-it6 for
+
+texts in Swedish, and Poro-2-8B-Instruct7neau et al., 2020). This embedding is used to per- for texts
+form k-NN search on a dense vector index (Douze in Finnish.
+et al., 2024) of the same dimensionality, contain- Our prompt chaining strategy for NIL predic-
+ing latent representations of Wikidata entities ex- tion and candidate selection follows a two-step ap-
+tracted from Wikipedia in 97 languages. The k-NN proach. First, we ask the instruction-tuned LLM
+search returns the top-k most similar candidates to predict whether an entity is NIL by determining
+to a mention embedding, ranked by inner prod- whether there is at least one exact match between
+uct. We selected BELA as the candidate retrieval a text mention and one of the candidates returned
+module since it is currently the only multilingual by the bi-encoder. If the answer is “no”, we clas-
+bi-encoder for entity linking that provides both sify the entity as NIL; otherwise, we run a separate
+pre-trained model weights and pre-computed entity prompt to ask the LLM to select the most similar
+embeddings. Alternative multilingual approaches entity among the candidates with respect to the
+such as mReFinED (Limkonchotiwat et al., 2023) mention. It is important to note that in this selec-
+or mGENRE (De Cao et al., 2022) either do not tion step the LLM can still return an empty set if
+release pre-trained models or do not support can- it is not able to confidently determine which is the
+didate retrieval via FAISS indexing, making them most plausible entity. If the LLM returns one entity
+unsuitable for our unsupervised pipeline. from the candidate set, we consider it as a correct
+
+The lookup table component is used to enrich the link; otherwise, we classify the entity as NIL. A de-
+information about every candidate with structured tailed explanation of the prompts used is available
+information from Wikidata. For every candidate in Appendix A.
+retrieved by the bi-encoder, the lookup table returns 3.4 Hyperparameter Configuration
+its label and description in the language of the text,
+along with the earliest date found in Wikidata and This approach does not need fine-tuning since it
+its entity type. This information allows the LLM to relies on the frozen weights of BELA and the
+better discriminate the correct candidate based on instruction-tuned LLMs. The only two hyper-
+KB information. parameters that must be specified are the number
+
+of candidates for each mention and the threshold
+3.2 Adaptive Threshold for filtering hard samples, which we selected em-
+Inspired by the findings of Ma et al. (2023), we pirically by finding the best configuration on the
+exploit the confidence scores of the retrieval mod- development set of each dataset. The values used
+ule (i.e., the inner product) to discriminate between in our experiments for k-NN search and the thresh-
+easy and hard samples. Following their approach, olds applied to BELA’s inner products are reported
+we perform NIL prediction and candidate selection in Appendix B.
+only if the scores of the candidates are below a cer-
+tain threshold, thus considering a mention as a hard
+sample. If at least one candidate has a score higher
+than or equal to the threshold, we link the mention
+to the candidate with the highest similarity.
+
+3.3 Candidate Selection 4https://euroeval.com/
+5mistralai/Mistral-Small-24B-Instruct-2501
+
+We then use an instruction-tuned LLM via prompt 6google/gemma-3-27b-it
+chaining to sequentially perform NIL prediction 7LumiOpen/Llama-Poro-2-8B-Instruct
+
+4
+
+
+
+Dataset Documents Mentions Languages Period Genre % NIL
+HIPE-2020 138 3,196 de, en, fr 19C-20C newspapers 25.97
+NewsEye 93 6,226 de, fi, fr, sv 19C-20C newspapers 43.4
+AJMC 44 1,090 de, en, fr 19C classical commentaries 2.41
+MHERCL 1,408 (sent.) 4,801 en, it 19C-20C music periodicals 29
+
+Table 1: Statistics of evaluation datasets including number of documents, mentions, languages, time period, genre,
+and percentage of NIL mentions.
+
+4 Experimental Setup NIL prediction prompt followed by the candidate
+selection prompt (see Section 3); (b) single: the
+
+4.1 Evaluation Datasets LLM performs candidate selection and eventually
+We evaluated our approach using four established predicts NIL using only the candidate selection
+benchmarks: HIPE-2020 (Ehrmann et al., 2020), prompt. This experimental design yields four dis-
+NewsEye (Hamdi et al., 2021), AJMC8 (Romanello tinct variants of MHEL-LLaMo, allowing us to
+and Najem-Meyer, 2024), and MHERCL9 (Gra- analyze the individual and combined effects of
+ciotti et al., 2025a,b). Overall, these benchmarks the adaptive threshold mechanism and the prompt
+include texts in 6 languages: English, Finnish, chaining strategy.
+French, German, Italian and Swedish. They be- We determined the optimal hyper-parameters for
+long to various genres: newspapers, music peri- candidate block size and threshold values by se-
+odicals and classical commentaries (i.e. scholarly lecting configurations that achieved the best perfor-
+notes to Greek classical works) and span from the mance on each dataset’s development set. These
+nineteenth century (19C) to the twentieth century hyper-parameters are detailed in Appendix B, Ta-
+(20C). Statistics regarding number of documents ble 4. Experiments were run on two NVIDIA L40S
+and number of mentions in each test set and other GPUs (2×46GB) with a total computational budget
+characteristics are reported in Table 1. As shown in of approximately 60 GPU hours across all datasets
+the table, almost all datasets (except AJMC) have and languages. To reduce computational costs, we
+a percentage of NIL mentions higher than 25%. reported results obtained with a single run.
+
+4.2 Architecture Configuration 4.3 Baseline systems
+We evaluated MHEL-LLAMO using two distinct The results obtained by MHEL-LLaMo are mea-
+configurations: sured using the F1 metric, following Ehrmann et al.
+
+(2022), and compared with those of SoTA models
+• MHEL-LLAMOvan (Vanilla Approach): on the same datasets reported in Linhares Pontes
+
+This configuration uses the LLM for NIL pre- et al. (2022), Ehrmann et al. (2022) and Graciotti
+diction and candidate selection for every block et al. (2025b). For MELHISSA (Linhares Pontes
+of entities returned by BELA; et al., 2022) we consider the results obtained by
+
+the best model without post-processing filters for a
+• MHEL-LLAMOθ (Ensemble Architecture):
+
+fair comparison. These baselines are described in
+This approach leverages an adaptive thresh-
+
+Section 2. Results reported for mGENRE (De Cao
+old based on BELA’s confidence scores to
+
+et al., 2022), GPT-4o mini and LLaMa3.3-70B on
+distinguish between easy and hard samples.
+
+MHERCL are taken from Graciotti et al. (2025b).
+Easy samples are those with high-confidence
+
+More recent multilingual entity linking approaches
+candidates, while hard samples require LLM
+
+such as mReFinED (Limkonchotiwat et al., 2023)
+intervention for NIL prediction and candidate
+
+or FELA (Rynkiewicz et al., 2025) were not in-
+selection.
+
+cluded as baselines since they do not release pre-
+Each configuration was tested under two set- trained model weights, preventing reproducible
+
+tings: (a) chain: the LLM uses in sequence the evaluation on our benchmark. All models are tested
+in the entity disambiguation task, where the correct
+
+8HIPE-2020, NewsEye and AJMC are available on span of a mention and its surrounding context is
+the Github repository of the HIPE-2022 Shared Task:
+github.com/hipe-eval/HIPE-2022-data given to the model to perform EL or NIL predic-
+
+9github.com/polifonia-project/KE-MHISTO tion.
+
+5
+
+
+
+Dataset Approach F1
+
+de en fi fr it sv
+MELHISSA 0.573 0.597 - 0.630 - -
+SBB 0.506 0.393 - 0.596 - -
+L3i 0.481 0.546 - 0.602 - -
+BELA 0.55 0.418 - 0.58 - -
+
+HIPE-2020
+MHEL-LLaMovan (single) 0.615 0.672 - 0.692 - -
+MHEL-LLaMovan (chain) 0.587 0.723 - 0.679 - -
+MHEL-LLaMoθ (single) 0.618 0.615 - 0.672 - -
+MHEL-LLaMoθ (chain) 0.62 0.686 - 0.687 - -
+MELHISSA 0.547 - 0.652 0.542 - 0.599
+SBB 0.431 - - 0.444 - -
+BELA 0.3 - 0.3 0.422 - 0.41
+
+NewsEye MHEL-LLaMovan (single) 0.488 - 0.47 0.593 - 0.504
+MHEL-LLaMovan (chain) 0.556 - 0.509 0.647 - 0.518
+MHEL-LLaMoθ (single) 0.444 - 0.453 0.584 - 0.504
+MHEL-LLaMoθ (chain) 0.556 - 0.479 0.662 - 0.521
+SBB 0.503 0.381 - 0.47 - -
+BELA 0.443 0.338 - 0.437 - -
+MHEL-LLaMovan (single) 0.521 0.496 - 0.635 - -
+
+AJMC
+MHEL-LLaMovan (chain) 0.485 0.47 - 0.57 - -
+MHEL-LLaMoθ (single) 0.521 0.476 - 0.6 - -
+MHEL-LLaMoθ (chain) 0.479 0.463 - 0.57 - -
+mGENRE - 0.47 - - 0.37 -
+GPT-4o mini - 0.6 - - 0.51 -
+LLAMA 3.3 70B - 0.61 - - 0.48 -
+BELA - 0.47 - - 0.49 -
+
+MHERCL
+MHEL-LLaMovan (single) - 0.7 - - 0.685 -
+MHEL-LLaMovan (chain) - 0.7 - - 0.698 -
+MHEL-LLaMoθ (single) - 0.65 - - 0.627 -
+MHEL-LLaMoθ (chain) - 0.67 - - 0.629 -
+
+Table 2: F1 performance comparison across four multilingual entity linking datasets. Best results are shown in bold,
+second-best results are underlined. Our MHEL-LLaMo variants consistently outperform baseline approaches, with
+particularly strong improvements on HIPE-2020, AJMC and MHERCL datasets.
+
+6
+
+
+
+5 Results Configuration Analysis: Comparing the differ-
+ent MHEL-LLaMo variants reveals recurring pat-
+
+This section presents the experimental results for terns. MHEL-LLaMo
+MHEL-LLaMo across four MHEL datasets: HIPE- θ generally outperforms
+
+MHEL-LLaMo
+2020, NewsEye, AJMC, and MHERCL. Table 2 van, particularly on HIPE-2020 and
+
+NewsEye. However, the adaptive threshold mech-
+shows the F1 scores achieved by our approach com- anism (θ) demonstrates its effectiveness primarily
+pared to existing SoTA methods. Best results are on texts belonging to the genre of press articles,
+highlighted in bold, while second-best results are probably due to the presence of high-frequency en-
+underlined. tities contained in these texts (popular places and
+HIPE-2020 Performance: Our approach demon- famous personalities) combined with a high ratio
+strates strong performance across all three lan- of NIL entities. The choice between chain and sin-
+guages (English, German, French). MHEL- gle prompt strategies appears dataset-dependent,
+LLaMovan (chain) achieves the best performance with chaining showing advantages on HIPE-2020,
+on English (0.723 F NewsEye, and MHERCL, while the single prompt
+
+1), while MHEL-LLaMoθ
+(chain) performs best on German (0.620 F1) and excels on AJMC where there is a lower ratio of
+achieves the best overall results. The vanilla single NIL entities.
+configuration excels on French (0.692 F1). No-
+tably, all MHEL-LLaMo variants substantially out- 6 Discussion
+perform the baseline systems across different lan-
+guages. The experimental results demonstrate that MHEL-
+NewsEye Analysis: The results on NewsEye LLaMo represents an important advancement in
+present a more challenging scenario, where MHEL- MHEL, achieving substantial improvements over
+LLaMo outperforms all models in French and Ger- SoTA approaches across multiple datasets. This
+man, while MELHISSA maintains superior per- section analyzes the key findings and their implica-
+formance on Swedish and Finnish, probably due tions.
+to better NIL prediction performance. To better
+understand this phenomenon, we conducted a thor- Performance Advantages: Our results reveal
+ough error analysis reported in Section 7 and an that MHEL-LLaMo variants consistently outper-
+evaluation of NIL prediction performances of best form existing SoTA models by substantial mar-
+model configurations in Appendix C. Nonetheless, gins across three of four evaluated datasets. On
+MHEL-LLaMoθ (chain) achieves the best perfor- HIPE-2020, our best configurations achieve im-
+mance on French (0.662 F1) and German (0.556 provements of up to 21% in F1 score for English,
+F1) and by a large margin outperforms the super- 8% for German, and 10% for French over MEL-
+vised system SBB. HISSA. Similarly, we observe substantial perfor-
+AJMC Evaluation: On the AJMC dataset, mance gains on AJMC, where MHEL-LLaMo
+MHEL-LLaMo demonstrates clear advantages, achieves relative improvements of 30% on En-
+with the vanilla single configuration achieving the glish, 4% on German and 35% on French over
+best results across all three languages: English the SBB baseline. Most notably, on MHERCL,
+(0.496), German (0.521), and French (0.635). This our approach demonstrates a remarkable average
+represents substantial improvements over the SBB improvement of 27% over larger models (GPT-4o
+and BELA baselines. mini and LLAMA 3.3 70B), achieving F1 scores
+
+of 0.700 for English and 0.698 for Italian. These
+MHERCL Results: The MHERCL dataset results underscore the effectiveness of combin-
+showcases the strongest performance gains for ing BELA’s efficient candidate retrieval with the
+our approach. MHEL-LLaMovan variants achieve LLM’s contextual understanding for refined NIL
+the highest F1 scores on both English (0.700) prediction and candidate selection. The approach
+and Italian (0.698), significantly outperforming re- proves particularly valuable for low-resource histor-
+cent strong baselines including GPT-4o mini and ical languages such as historical Italian, suggesting
+LLAMA 3.3 70B, with an average improvement that the bi-encoder component effectively compen-
+of 27% over these larger models used in zero-shot sates for the LLM’s limited exposure to historical
+setting. language variants during pre-training.
+
+7
+
+
+
+Effectiveness of Ensemble Strategy: The empir- Relation HIPE-2020 NewsEye AJMC MHERCL Tot.
+False 15 8 16 20 59
+
+ical results validate the hypothesis proposed by Ma Exact 4 8 4 2 18
+et al. (2023) regarding ensemble strategies for IE Close 2 2 1 0 5
+
+tasks, though with important domain-specific nu- Related 2 6 3 2 13
+Broader 0 1 0 0 1
+
+ances. To statistically justify the use of inner prod- Narrower 2 0 1 1 4
+
+ucts as a proxy for discriminating between easy
+Table 3: Distribution of semantic relations between
+
+and hard samples, we conducted a point-biserial predicted and ground truth entities in a sample of 100
+correlation analysis (Appendix D) measuring the false predictions from MHEL-LLaMo.
+association between BELA’s inner product scores
+and prediction correctness. All correlations are pos-
+itive and statistically significant (p < 0.001), con- 7 Error Analysis
+firming that higher bi-encoder confidence scores
+are reliably associated with correct predictions and To gain a better understanding of the accuracy of
+validating the core assumption underlying our adap- the proposed approach, we conducted an error anal-
+tive threshold mechanism. ysis by sampling 100 false predictions of the best
+
+The adaptive threshold mechanism (MHEL- MHEL-LLaMo variants proportionally across all
+LLaMoθ) demonstrates clear advantages on news- four datasets. The goal of this analysis was to un-
+paper datasets (HIPE-2020 and NewsEye), where derstand if any pattern of semantic relation occurs
+it achieves optimal performance for German on between the ground truth annotations and the pre-
+HIPE-2020, and for French and German on News- dicted entities. To estimate this, we classified each
+Eye. Conversely, the vanilla approach proves error in the sample according to 6 classes: false, ex-
+more effective on classical commentaries (AJMC) act, close, related, broader and narrower. Statistics
+and music periodicals (MHERCL), where MHEL- related to these error classes for the four datasets
+LLaMovan achieves the best results. Notably, this are reported in Table 3. A detailed explanation of
+issue reveals that confidence scores alone are not these error classes, with examples, is reported in
+always the best proxy for discriminating easy from Appendix E.
+hard samples. The effectiveness of the thresh- Our error analysis revealed that a consistent num-
+old mechanism depends on two factors: NIL en- ber of predictions (41/100) were either exactly re-
+tity prevalence and entity popularity. For datasets ferring to the entity mentioned or had a degree of
+with low NIL rates (AJMC) or high proportions of semantic relation with the ground truth. Specif-
+long-tail entities (MHERCL), the vanilla approach ically, we found that 18 predictions were indeed
+proves more effective, as threshold filtering may correct (exact). This is primarily because many
+bypass mentions where LLM intervention would mentions, especially in NewsEye, are wrongly an-
+correct bi-encoder errors. A detailed analysis of notated as NIL and the entity they refer to was
+this phenomenon is provided in Appendix D. correctly retrieved by the model. This phenomenon
+
+can be attributed to KB updates, an issue which
+has already been investigated for EL datasets (We-
+
+Impact of Prompt Chaining Strategy: An im- ichselbraun et al., 2019) and requires data curators
+portant finding emerges regarding the relationship to adopt versioning strategies to keep up with KB
+between prompt strategy and NIL entity prevalence. evolution. Another prominent category of errors
+The chain configuration consistently outperforms consists of predictions that are somehow related to
+the single prompt approach on datasets with high the ground truth. For instance, a reference to the
+NIL percentages: HIPE-2020 (25.97% NIL), News- Greek hero Odysseus can be linked by the system
+Eye (43.4% NIL), and MHERCL (29% NIL). This to the epic poem Odyssey. Moreover, close seman-
+pattern strongly suggests that LLMs require ex- tic relations can also appear when an entity may
+plicit, separate prompting to accurately identify have multiple aliases in Wikidata and the system
+NIL entities. When using a single prompt that predicts a different identifier than the one in the
+combines candidate selection and NIL prediction, ground truth. This is for example the case of the
+the model exhibits a bias toward selecting existing Greek god “Apollo”, which in Wikidata has two
+candidates rather than predicting NIL, leading to distinct entries, “Apollo” (Q37340) and “Phoebus”
+degraded performance on datasets with substantial (Q3382132). For more details on the cases found
+NIL proportions. in our error analysis we refer to Appendix E. Fi-
+
+8
+
+
+
+nally, our error analysis revealed that a prominent analysis (Appendix C) provides further insight into
+source of errors is false NIL predictions, along with this phenomenon: Swedish exhibits notably low
+entities wrongly linked due to OCR errors in the recall (0.184) in NIL prediction, indicating that
+surface form. Gemma-3-27B-it tends to conservatively predict
+
+entities as non-NIL, resulting in a high number of
+8 Conclusion false negatives where actual NIL entities are in-
+
+In this paper, we present MHEL-LLaMo, a novel correctly linked to Wikidata candidates. Finnish
+
+unsupervised approach for MHEL that is inspired shows more balanced but still modest performance
+
+by ensemble techniques to combine a multilingual with Poro-2-8B-it achieving 0.516 recall. These
+
+bi-encoder for candidate retrieval with instruction- findings suggest that the multilingual capabilities
+
+tuned LLMs for candidate selection. The results of current open-source LLMs remain limited for
+
+obtained by MHEL-LLaMo on six European lan- Nordic languages, and that language-specific fine-
+
+guages demonstrate not only better accuracy than tuning or larger instruction-tuned models may be
+
+SoTA specialized models but also robustness to- necessary to improve performance in these settings.
+
+ward NIL entities (frequent in historical docu- Second, performance on classical commentaries
+
+ments). The improvements achieved on histori- (AJMC) remains lower compared to other genres,
+
+cal benchmarks without the need for fine-tuning with F1 scores ranging from 0.496 to 0.635. De-
+
+prove that this approach can offer a novel scal- tailed error analysis reveals that the majority of
+
+able solution for MHEL in low-resource scenarios, errors stem from linking mentions to literary works
+
+contributing to the democratization of NLP appli- and cultural objects. This finding highlights a criti-
+
+cations for various case studies in the humanities. cal gap in current EL approaches, which are primar-
+ily optimized for person, location, and organization
+
+Future work will investigate the impact of us- entities, and suggests the need for specialized tech-
+ing historical data to train the candidate retrieval niques to handle cultural and literary entities that
+module for enhancing the bi-encoder embeddings. exhibit different referential patterns and contextual
+Moreover, supervised algorithms (such as Gradient cues. Additionally, the AJMC dataset presents the
+Boosted Trees) can be used to refine the adaptive lowest F1 scores for NIL prediction across all lan-
+threshold mechanism in order to take linguistic as guages (0.129–0.167), as a direct consequence of
+well as geometric information into account and the low proportion of NIL entities in classical com-
+more relieably discriminate easy and hard samples. mentaries (2.41%, see Table 1). This strong class
+Additionally, ways to take semantic proximity and imbalance renders the explicit NIL prediction step
+perspectivism should be taken into account when in the chain approach prone to generating excessive
+evaluating MHEL systems (Aroyo and Welty, 2015; false positives, making the single prompt strategy
+Valette, 2024). Finally, MHEL-LLaMo will be in- more suitable for domains with fewer NIL entities.
+corporated into existing LLM-based Relation Ex- Furthermore, BELA embeddings used are
+traction pipelines (Santini, 2024; Balducci et al., trained on a multilingual Wikipedia dump of
+2025) for end-to-end Knowledge Extraction on his- 2023 (Plekhanov et al., 2023). While this issue
+torical texts. may have an impact on recent texts, it does not
+9 Limitations significantly affect MHEL. Additionally, our error
+
+analysis revealed that gold-standard annotations in
+Our experiments revealed two important limita- EL datasets, especially for NIL entities, may lose
+tions. First, MHEL-LLaMo exhibits reduced per- validity as Wikidata evolves. Although this issue
+formance on Nordic languages, particularly Finnish does not originate from our approach, it may af-
+(best F1: 0.509) and Swedish (best F1: 0.521). fect the validity of benchmarks for historical IE.
+This performance gap likely reflects the inherent Nevertheless, this issue can be tackled by adopting
+linguistic complexities of these languages com- versioning techniques in data curation to explicitly
+bined with potentially limited multilingual repre- state the specific KB release used for data annota-
+sentation in both the bi-encoder and LLM compo- tion.
+nents. The morphological richness and relatively Finally, this paper has not explored the use of
+smaller training data availability for Nordic lan- parameter-efficient fine-tuning techniques, such as
+guages present challenges that our current archi- LoRA (Hu et al., 2022), to train smaller LLMs for
+tecture does not fully address. Our NIL prediction NIL prediction and candidate selection. We con-
+
+9
+
+
+
+sider this a promising research direction to reduce References
+the computational cost of our approach and further Lora Aroyo and Chris Welty. 2015. Truth is a lie: Crowd
+increase its accessibility. truth and the seven myths of human annotation. AI
+
+Magazine, 36(1):15–24.
+10 Ethical Considerations
+
+Gianmaria Balducci, Elisabetta Fersini, and Messina
+While MHEL-LLaMo demonstrates multiple ben- Enza. 2025. Beyond raw text: Knowledge-
+efits, several potential risks warrant consideration. augmented italian relation extraction with large lan-
+First, the reliance on LLMs for hard samples in- guage models. In Proceedings of the Eleventh Italian
+
+Conference on Computational Linguistics (CLiC-it
+curs environmental costs through GPU inference, 2025), pages 45–54.
+though our adaptive approach mitigates this by pro-
+cessing only difficult cases. Second, both BELA Emanuela Boros, Elvys Linhares Pontes, Luis Adrián
+
+Cabrera-Diego, Ahmed Hamdi, José G Moreno,
+and the instruction-tuned LLMs inherit biases from Nicolas Sidère, and Antoine Doucet. 2020. Robust
+their training data, which may result in unequal named entity recognition and linking on historical
+performance across languages. Our experiments multilingual documents. In Conference and Labs of
+confirm this, showing reduced accuracy for under- the Evaluation Forum (CLEF 2020), volume 2696,
+
+pages 1–17. CEUR-WS Working Notes.
+represented languages like Finnish and Swedish.
+Finally, linking entities to Wikidata may perpetu- Marta Boscariol, Luana Bulla, Lia Draetta, Beatrice Fi-
+ate existing biases or gaps in the KB, particularly umanò, Emanuele Lenzi, and Leonardo Piano. 2024.
+for non-Western historical figures and cultural arti- Evaluation of LLMs on Long-tail Entity Linking in
+
+Historical Documents. In Posters and Demos, Work-
+facts. shops, and Tutorials of EKAW 2024, volume 3967.
+
+CEUR.
+Acknowledgments
+
+Tom Brown, Benjamin Mann, Nick Ryder, Melanie
+This research has been carried out during a visiting Subbiah, Jared D Kaplan, Prafulla Dhariwal, Arvind
+period spent by Cristian Santini at Telecom Paris Neelakantan, Pranav Shyam, Girish Sastry, Amanda
+(France), under the supervision of Prof. Mehwish Askell, and 1 others. 2020. Language models are
+
+few-shot learners. Advances in neural information
+Alam. The visiting has received financial sup- processing systems, 33:1877–1901.
+port by the University of Macerata through the
+CIMI scholarlship. Cristian Santini’s PhD schol- Yiyi Chen, Harald Sack, and Mehwish Alam. 2022. An-
+
+alyzing social media for measuring public attitudes
+arship has been funded by the PNRR plan under toward controversies and their driving factors: a case
+the Next Generation EU program through decree study of migration. Social network analysis and min-
+of the Italian Ministry of University and Research ing, 12(1):135.
+(D.M. 117/2023), with the financial support of Grot- Alexis Conneau, Kartikay Khandelwal, Naman Goyal,
+tini Communication S.R.L. (Porto Recanati, Italy). Vishrav Chaudhary, Guillaume Wenzek, Francisco
+Marieke van Erp’s work is funded by the European Guzmán, Edouard Grave, Myle Ott, Luke Zettle-
+Union under grant agreement 101088548 - TRI- moyer, and Veselin Stoyanov. 2020. Unsupervised
+FECTA. Views and opinions expressed are however cross-lingual representation learning at scale. In Pro-
+
+ceedings of the 58th Annual Meeting of the Asso-
+those of the author only and do not necessarily re- ciation for Computational Linguistics, pages 8440–
+flect those of the European Union or the European 8451, Online. Association for Computational Lin-
+Research Council. Neither the European Union nor guistics.
+the granting authority can be held responsible for Nicola De Cao, Ledell Wu, Kashyap Popat, Mikel
+them. Artetxe, Naman Goyal, Mikhail Plekhanov, Luke
+
+Zettlemoyer, Nicola Cancedda, Sebastian Riedel, and
+Fabio Petroni. 2022. Multilingual autoregressive en-
+tity linking. Transactions of the Association for Com-
+putational Linguistics, 10:274–290.
+
+Matthijs Douze, Alexandr Guzhva, Chengqi Deng,
+Jeff Johnson, Gergely Szilvasy, Pierre-Emmanuel
+Mazaré, Maria Lomeli, Lucas Hosseini, and Hervé
+Jégou. 2024. The faiss library. arXiv preprint
+arXiv:2401.08281.
+
+Maud Ehrmann, Ahmed Hamdi, Elvys Linhares Pontes,
+Matteo Romanello, and Antoine Doucet. 2023.
+
+10
+
+
+
+Named entity recognition and classification in histor- Edward J Hu, Yelong Shen, Phillip Wallis, Zeyuan
+ical documents: A survey. ACM Computing Surveys, Allen-Zhu, Yuanzhi Li, Shean Wang, Lu Wang,
+56(2):1–47. Weizhu Chen, and 1 others. 2022. Lora: Low-rank
+
+adaptation of large language models. ICLR, 1(2):3.
+Maud Ehrmann, Matteo Romanello, Stefan Bircher,
+
+and Simon Clematide. 2020. Introducing the clef Nikolaos Kolitsas, Octavian-Eugen Ganea, and Thomas
+2020 hipe shared task: Named entity recognition Hofmann. 2018. End-to-end neural entity linking.
+and linking on historical newspapers. In European In Proceedings of the 22nd Conference on Computa-
+Conference on Information Retrieval, pages 524–532. tional Natural Language Learning, pages 519–529,
+Springer. Brussels, Belgium. Association for Computational
+
+Linguistics.
+Maud Ehrmann, Matteo Romanello, Sven Najem-
+
+Meyer, Antoine Doucet, and Simon Clematide. 2022. Kai Labusch and Clemens Neudecker. 2020. Named
+Overview of hipe-2022: named entity recognition entity disambiguation and linking historic newspaper
+and linking in multilingual historical documents. ocr with bert. CLEF (Working Notes), 2696.
+In International Conference of the Cross-Language
+Evaluation Forum for European Languages, pages Peerat Limkonchotiwat, Weiwei Cheng, Christos
+423–446. Springer. Christodoulopoulos, Amir Saffari, and Jens Lehmann.
+
+2023. mReFinED: An efficient end-to-end multilin-
+Carlos-Emiliano González-Gallardo, Emanuela Boros, gual entity linking system. In Findings of the As-
+
+Nancy Girdhar, Ahmed Hamdi, Jose G. Moreno, and sociation for Computational Linguistics: EMNLP
+Antoine Doucet. 2023. Yes but.. Can ChatGPT Iden- 2023, pages 15080–15089, Singapore. Association
+tify Entities in Historical Documents? In 2023 for Computational Linguistics.
+ACM/IEEE Joint Conference on Digital Libraries
+(JCDL), pages 184–189. ISSN: 2575-8152. Elvys Linhares Pontes, Luis Adrián Cabrera-Diego,
+
+Jose G Moreno, Emanuela Boros, Ahmed Hamdi,
+Carlos-Emiliano González-Gallardo, Hanh Thi Hong Antoine Doucet, Nicolas Sidere, and Mickaël Cous-
+
+Tran, Ahmed Hamdi, and Antoine Doucet. 2024. taty. 2022. Melhissa: a multilingual entity linking
+Leveraging Open Large Language Models for Histor- architecture for historical press articles. International
+ical Named Entity Recognition. In Linking Theory journal on digital libraries, 23(2):133–160.
+and Practice of Digital Libraries, pages 379–395,
+Cham. Springer Nature Switzerland. Yubo Ma, Yixin Cao, Yong Hong, and Aixin Sun. 2023.
+
+Large language model is not a good few-shot informa-
+Arianna Graciotti, Nicolas Lazzari, Valentina Presutti, tion extractor, but a good reranker for hard samples!
+
+and Rocco Tripodi. 2025a. Musical heritage his- In Findings of the Association for Computational
+torical entity linking. Artificial Intelligence Review, Linguistics: EMNLP 2023, pages 10572–10601, Sin-
+58(5):140. gapore. Association for Computational Linguistics.
+
+Arianna Graciotti, Leonardo Piano, Nicolas Lazzari, Mikhail Plekhanov, Nora Kassner, Kashyap Popat,
+Enrico Daga, Rocco Tripodi, Valentina Presutti, and Louis Martin, Simone Merello, Borislav Kozlovskii,
+Livio Pompianu. 2025b. KE-MHISTO: Towards a Frédéric A Dreyer, and Nicola Cancedda. 2023. Mul-
+multilingual historical knowledge extraction bench- tilingual end to end entity linking. arXiv preprint
+mark for addressing the long-tail problem. In Find- arXiv:2306.08896.
+ings of the Association for Computational Linguistics:
+ACL 2025, pages 20316–20339, Vienna, Austria. As- Matteo Romanello and Sven Najem-Meyer. 2024. A
+sociation for Computational Linguistics. named entity-annotated corpus of 19th century classi-
+
+cal commentaries. Journal of Open Humanities Data,
+Paul Groth and Stefan Dietze. 2024. Understanding 10(1).
+
+the impact of entity linking on the topology of en-
+tity co-occurrence networks for social media anal- Adam Aron Rynkiewicz, Raul Palma, and Paulina
+ysis. In Knowledge Engineering and Knowledge Poniatowska-Rynkiewicz. 2025. Introducing FELA -
+Management: 24th International Conference, EKAW Flexible Entity Linking Approach. Selected Papers
+2024, Amsterdam, The Netherlands, November 26– of HybridAIMS and CAI Workshops at CAiSE 2025,
+28, 2024, Proceedings, volume 15370, page 69. pages 4–11. Place: Vienna, Austria Publisher: Zen-
+Springer Nature. odo.
+
+Ahmed Hamdi, Elvys Linhares Pontes, Emanuela Boros, Cristian Santini. 2024. Combining language models
+Thi Tuyet Hai Nguyen, Günter Hackl, Jose G Moreno, for knowledge extraction from italian tei editions.
+and Antoine Doucet. 2021. A multilingual dataset for Frontiers in Computer Science, 6:1472512.
+named entity recognition, entity linking and stance
+detection in historical newspapers. In Proceedings Cristian Santini, Nele Garay, Etienne Posthumus, and
+of the 44th International ACM SIGIR Conference on Harald Sack. 2024a. The art of relations: Analysing
+Research and Development in Information Retrieval, vasari’s biographies with network theory and seman-
+pages 2328–2334. tic web. In Book of Abstracts-DHd2024. Zenodo.
+
+11
+
+
+
+Cristian Santini, Laura Melosi, and Emanuele Fron- A.1 NIL Prediction Prompt
+toni. 2024b. Named Entity Recognition in Historical
+Italian: The Case of Giacomo Leopardi’s Zibaldone. System Prompt: You are a highly pre-
+In Posters and Demos, Workshops, and Tutorials of cise multilingual information extraction
+EKAW 2024, volume 3967, Amsterdam, Netherlands. system specialized in disambiguating en-
+CEUR. tities within noisy historical texts. Your
+
+Cristian Santini, Mary Ann Tan, Oleksandra Bruns, task is to analyse the text provided by
+Tabea Tietz, Etienne Posthumus, Harald Sack, and 1 the user and determine if the reference
+others. 2022. Knowledge extraction for art history: marked by [ENT] tags can be associated
+the case of vasari’s the lives of the artists (1568). In or not to one of the candidate Wikidata
+CEUR Workshop Proceedings, volume 3234. CEUR-
+WS. entities provided in the JSON list. Al-
+
+ways respond by saying either “yes” or
+Alejandro Sierra-Múnera, Linh Le, Gianluca Demartini, “no”. Do not generate Python code.
+
+and Ralf Krestel. 2024. Melart: A multimodal entity
+linking dataset for art. Transactions on Graph Data User Prompt: Read the input text
+and Knowledge, 2(2):8–1. written in {language}, published in
+
+{document_date} and belonging to the
+Mathieu Valette. 2024. What does perspectivism mean? genre of {genre}.
+
+an ethical and methodological countercriticism. In
+Proceedings of the 3rd Workshop on Perspectivist Ap- Answer if the entity mentioned between
+proaches to NLP (NLPerspectives)@ LREC-COLING the [ENT] tags in the input text corre-
+2024, pages 111–115. sponds to one of the candidate Wikidata
+
+Albert Weichselbraun, Adrian M.P. Brasoveanu, Philipp entity provided in the json. Give a simple
+Kuntschik, and Lyndon J.B. Nixon. 2019. Improv- binary answer.
+ing named entity linking corpora quality. In Pro- Input Text: {annotated_text}
+ceedings of the International Conference on Recent
+Advances in Natural Language Processing (RANLP Candidates: {candidates_in_json}
+2019), pages 1328–1337, Varna, Bulgaria. INCOMA
+Ltd. A.2 Candidate Selection Prompt
+
+Urchade Zaratiana, Nadi Tomeh, Pierre Holat, and System Prompt: You are an effective
+Thierry Charnois. 2024. GLiNER: Generalist model multilingual information extraction sys-
+for named entity recognition using bidirectional trans- tem specialized in disambiguating enti-
+former. In Proceedings of the 2024 Conference of
+the North American Chapter of the Association for ties within noisy historical texts. Your
+Computational Linguistics: Human Language Tech- task is to analyse the text provided by
+nologies (Volume 1: Long Papers), pages 5364–5376, the user and disambiguate the reference
+Mexico City, Mexico. Association for Computational marked by [ENT] tags by selecting a
+Linguistics. Wikidata entity from a given list of can-
+
+didates. Always respond by returning a
+A NIL Prediction and Candidate JSON-formatted answer; do not generate
+
+Selection Prompts Python code.
+User Prompt: Read the input text
+
+This appendix presents the two prompts used in written in {language}, published in
+MHEL-LLaMo to perform entity disambiguation. {document_date} and belonging to the
+The two prompts are used in a prompt chaining genre of {genre}.
+approach: first, the NIL prediction prompt is used
+to verify if the LLM finds a plausible match in Disambiguate the entity mentioned be-
+the list of candidates; then the candidate selection tween the [ENT] tags by selecting the
+prompt asks the LLM to pick the likeliest entity. most appropriate Wikidata entity from
+Both prompts includes a task instruction, the input the list of candidates.
+text with the target mention marked by [ENT] tags, Return the corresponding Wikipedia ti-
+contextual information related to the text (date, lan- tle and Wikidata ID of the selected en-
+guage, genre) and a JSON block listing candidate tity in a JSON object formatted as fol-
+entities with associated labels, descriptions, types lows: { “wikipedia_title”: “”,
+and temporal information. “wikidata_id”: “” }
+
+12
+
+
+
+Make sure to select both the Wikipedia MHERCL. This confirms that explicitly separating
+title and the Wikidata ID from the pro- NIL prediction from candidate selection through
+vided list of candidates. Pay attention prompt chaining helps LLMs avoid the bias toward
+that the list of candidates may not in- selecting existing candidates observed with the sin-
+clude the entity mentioned. If none of the gle prompt approach.
+candidates match with high confidence Second, the combination of chain prompting
+the entity tagged with [ENT], return an with the adaptive threshold mechanism (θ) proves
+empty json. particularly effective for French, both in HIPE-
+Input Text: {annotated_text} 2020 and NewsEye. In these cases, the thresh-
+
+old filtering reduces false positives by prevent-
+Candidates: {candidates_in_json} ing the LLM from unnecessarily processing high-
+
+confidence predictions, where the bi-encoder al-
+B Architecture Hyper-Parameters ready provides reliable results.
+This section reports the hyper-parameters used in Third, the results shed light on the performance
+the experiments. Threshold to filter easy sam- gap observed for Nordic languages discussed in
+ples was selected by computing the median of Section 9. Swedish exhibits a notably low recall
+the scores of BELA for correct predictions on (0.184) despite reasonable precision (0.679), sug-
+the development set. Instead, block size was es- gesting that Gemma-3-27B-it has an intrinsic bias
+timated by measuring Recall@K at 5 steps with toward predicting entities as non-NIL. This con-
+K = {10, 20, 30, 40, 50} and by finding the best servative behavior leads to a high number of false
+step when there was no significant increment in negatives, where actual NIL entities are incorrectly
+Recall@K on the development set, i.e., when linked to Wikidata candidates. Finnish shows more
+Recall@Ki+10 −Recall@Ki < 0.01. balanced but still modest performance, with Poro-
+
+2-8B-it achieving 0.516 recall. These findings sug-
+Dataset Lang Block Size Threshold gest that the multilingual capabilities of current
+
+de 30 21.4 open-source LLMs remain limited for low-resource
+HIPE-2020 en 20 21.24 languages, and that language-specific fine-tuning or
+
+fr 20 21.24 larger instruction-tuned models may be necessary
+de 30 21.5 to improve NIL prediction in these settings.
+fi 20 19.57
+
+NewsEye Finally, the AJMC dataset presents the lowest F1
+fr 20 21.35 scores for NIL prediction across all languages, with
+sv 20 20.43 values ranging from 0.129 to 0.167. This is a direct
+en 50 20.7 consequence of the low proportion of NIL entities
+
+AJMC de 50 21.5 in classical commentaries (2.41%, see Table 1),
+fr 20 17.92 which creates a strong class imbalance. In such
+en 20 21.5
+
+MHERCL scenarios, the single prompt strategy proves more
+it 20 21.5 effective, as the explicit NIL prediction step in the
+
+Table 4: Architecture hyper-parameters for MHEL- chain approach tends to generate excessive false
+LLaMo experiments across datasets and languages. positives when NIL entities are rare.
+
+D Confidence Score Correlation Analysis
+C NIL Prediction Evaluation
+
+To provide a statistical justification for using the bi-
+To provide further insights into the performance of encoder’s confidence scores as a proxy to discrimi-
+MHEL-LLaMo on NIL entity prediction, we report nate between easy and hard samples, we conducted
+in Table 5 the Precision, Recall, and F1 scores for a point-biserial correlation analysis measuring the
+NIL prediction across the best-performing model association between the inner product scores pro-
+configurations on each dataset and language split. duced by BELA during candidate retrieval and the
+
+The results reveal several patterns that com- correctness of the final prediction. Results are re-
+plement our main findings. First, the chain ported in Table 6.
+prompt strategy consistently yields higher recall All correlations are positive and statistically sig-
+for NIL prediction, particularly on HIPE-2020 and nificant (p < 0.001), confirming that higher bi-
+
+13
+
+
+
+Dataset Lang LLM Prompt θ Precision Recall F1
+de Mistral-24B chain yes 0.440 0.642 0.522
+
+HIPE-2020 en Mistral-24B chain no 0.698 0.801 0.746
+fr Mistral-24B single no 0.693 0.624 0.657
+de Mistral-24B chain yes 0.684 0.510 0.584
+fi Poro-2-8B chain no 0.649 0.516 0.575
+
+NewsEye
+fr Mistral-24B chain yes 0.839 0.562 0.673
+sv Gemma-3-27B chain no 0.679 0.184 0.289
+de Mistral-24B single no 0.103 0.429 0.167
+
+AJMC en Mistral-24B single no 0.100 0.222 0.138
+fr Mistral-24B single no 0.091 0.222 0.129
+en Mistral-24B chain no 0.588 0.803 0.679
+
+MHERCL
+it Mistral-24B chain no 0.558 0.800 0.657
+
+Table 5: NIL prediction performance of best model configurations across the four historical datasets. Precision,
+Recall, and F1 are computed specifically for NIL entity detection.
+
+Dataset Lang rpb p-value approach on HIPE-2020 and NewsEye, while the
+de 0.421 < 10−39 vanilla approach proves more effective on AJMC
+
+HIPE-2020 en 0.389 < 10−9 and MHERCL despite AJMC exhibiting the high-
+fr 0.384 < 10−43 est correlations.
+de 0.335 < 10−31
+
+This apparent paradox can be explained by con-
+fi 0.354 < 10−9
+
+NewsEye sidering two interacting factors: NIL entity preva-
+fr 0.371 < 10−42
+
+lence and entity popularity. AJMC contains only
+sv 0.455 < 10−20
+
+2.41% NIL entities, meaning that nearly all men-
+de 0.617 < 10−17
+
+tions have a correct candidate in Wikidata. In this
+AJMC en 0.655 < 10−18
+
+scenario, many samples are likely to have a valid
+fr 0.534 < 10−14
+
+candidate with low confidence that the LLM can
+en 0.320 < 10−39
+
+MHERCL successfully identify through candidate selection.
+it 0.385 < 10−59
+
+The high correlation in AJMC reflects that the bi-
+Table 6: Point-biserial correlation (rpb) between BELA encoder effectively ranks candidates, but the thresh-
+confidence scores and prediction correctness across old filtering provides limited advantage when NIL
+datasets and languages. All correlations are positive prediction is rarely necessary. Applying the LLM
+and statistically significant. consistently across all samples (vanilla approach)
+
+allows it to refine candidate selection without the
+risk of the threshold incorrectly bypassing men-
+
+encoder confidence scores are reliably associated tions that would benefit from LLM intervention.
+with correct predictions. This finding validates MHERCL presents a different case: despite a
+the core assumption underlying MHEL-LLaMo’s substantial NIL rate (29%), the vanilla approach
+adaptive threshold mechanism: confidence scores still outperforms threshold-based filtering. This is
+provide a meaningful signal for identifying samples explained by the high proportion of long-tail enti-
+that can be resolved without LLM intervention. ties in music periodicals (obscure musicians, com-
+
+The correlation strength varies across datasets: posers, music venues) that are underrepresented in
+AJMC exhibits the strongest correlations (rpb = the bi-encoder’s training data. For such entities,
+0.53–0.66), HIPE-2020 and NewsEye show moder- confidence scores become less reliable as discrimi-
+ate correlations (rpb = 0.33–0.46), and MHERCL nators: the bi-encoder may return low confidence
+displays the lowest correlations (rpb = 0.32–0.39). even when a correct candidate exists, or conversely,
+However, correlation strength alone does not fully confidently retrieve an incorrect candidate. This
+predict the effectiveness of the ensemble strat- interpretation is supported by MHERCL exhibiting
+egy. As shown in Table 2, the threshold-based ap- the lowest correlations among all datasets. In such
+proach (MHEL-LLaMoθ) outperforms the vanilla scenarios, consistent LLM intervention helps cor-
+
+14
+
+
+
+rect bi-encoder errors that threshold filtering would tionship to the ground truth entity; the predic-
+otherwise miss. tion is completely incorrect.
+
+Conversely, HIPE-2020 and NewsEye exhibit
+higher NIL rates (25.97% and 43.4%, respectively) Exact The predicted entity refers to the same real-
+combined with a prevalence of popular entities world entity as the ground truth, but uses a
+(prominent locations, well-known personalities) different Wikidata identifier.
+that are well-represented in the bi-encoder’s train- Close The predicted entity is very similar to the
+ing data. In these datasets, the moderate correla- ground truth entity, typically representing the
+tions combined with reliable confidence scores for same concept with minor differences (e.g., dif-
+popular entities make the threshold strategy effec- ferent time periods or alternative names).
+tive: high-confidence samples are likely correct
+and can bypass the LLM, while low-confidence Related The predicted entity has a clear semantic
+samples genuinely require LLM intervention for connection to the ground truth entity, such as
+both NIL prediction and candidate disambiguation. through thematic, conceptual, or associative
+The threshold mechanism prevents the LLM from relationships.
+second-guessing correct high-confidence predic-
+tions while focusing its capacity on genuinely am- Broader The predicted entity represents a more
+biguous cases. general or superordinate concept that encom-
+
+These findings suggest that the effectiveness of passes the ground truth entity.
+the ensemble strategy depends on the interplay be- Narrower The predicted entity represents a more
+tween confidence score reliability, NIL entity preva- specific or subordinate concept that is con-
+lence, and entity popularity. The adaptive threshold tained within or is a particular instance of the
+mechanism is most beneficial when two conditions ground truth entity.
+are met: (1) a substantial proportion of NIL entities
+exists, and (2) the dataset contains predominantly
+popular entities for which the bi-encoder produces
+reliable confidence scores. When either condition
+is not satisfied — low NIL prevalence (AJMC) or
+high proportions of long-tail entities (MHERCL) —
+consistent LLM processing proves more effective.
+
+E Semantic Relations in Error Analysis
+This appendix provides detailed definitions and ex-
+amples of the semantic relation categories used in
+our error analysis (Section 6). To better understand
+the nature of false predictions made by the MHEL-
+LLaMo model, we manually analyzed 100 incor-
+rectly predicted entity links sampled proportionally
+across the four datasets. Each error was classified
+according to the semantic relationship between the
+predicted entity and the ground truth annotation,
+allowing us to distinguish between completely in-
+correct predictions and those that exhibit varying
+degrees of semantic proximity to the correct entity.
+
+The classification scheme consists of six cate-
+gories that capture different types of relationships
+between predictions and ground truth entities. Con-
+cise definitions of each category are reported below,
+which are further illustrated through concrete ex-
+amples in Table 7.
+
+False The predicted entity has no semantic rela-
+
+15
+
+
+
+Semantic Relation Example
+Surface Ground Truth Prediction
+
+False Électre Electra (Q733444) Électre (Q3587592)
+Exact Sophocles Sophocles (Q11950683) Sophocles (Q7235)
+Close Epoque L’Époque (1865-1869) (Q63171281) L’Époque (1937–1949) (Q112206500)
+Related OEdipe Oedipus at Colonus (Q294001) Oedipus (Q130890)
+Broader Salford Salford (Q47952) Salford (Q1142118)
+Narrower 11. Iliad (Q8275) Ilias, 11 Book (Q1658482)
+
+Table 7: Examples of semantic relations between ground truth and predicted entities.
+
+16

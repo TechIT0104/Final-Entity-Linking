@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="getDataView" ng-controller="getDataViewController">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="{{data.basic.description}}">
+        <meta name="author" content="{{data.basic.title}}">
+        <title>Cognitive Computation Group</title>
+        <link href="../../bootstrap-3.1.1-dist/css/bootstrap.css" rel="stylesheet">
+        <link href="../../css/global.css" rel="stylesheet">
+        <link rel="shortcut icon" type="image/x-icon" href="../../images/ccg.ico" />
+    </head>
+    <body ng-cloak>
+        <div ng-include="'../../chunks/navigation-top.html'"></div>
+        <div>
+          <div class="header-container">
+              <div class="inline" ng-include="'../../chunks/page-header-new.html'"></div>
+              <div class="navigation-container inline" ng-include="'../../chunks/navigation-side-new.html'"></div>
+          </div>
+          <div>
+              <h2>Resource <small>Data</small></h2>
+              <div class="col-lg-10 col-lg-offset-1 col-md-10 col-sm-12 col-xs-12">
+                      <div id="article">
+
+                          <h3>{{data.basic.title}} <small>{{data.basic.timestamp}}</small></h3>
+
+                          <div class="row">
+                              <div class="col-md-12 text-center">
+                                  <a type="button" class="btn btn-link" ng-if="data.software" href="../software_view/{{data.software.nickname}}">
+                                      Software
+                                  </a>
+                                  <a type="button" class="btn btn-link" ng-if="data.demo" href="../demo_view/{{data.demo.nickname}}">
+                                      Demo
+                                  </a>
+
+                                  <div ng-if="data.people">
+                                      <!-- SUPPLEMENTARY -->
+                                      <a type="button" class="btn btn-link" ng-if="data.people.length<1" href="../people_view/{{data.people.id}}">
+                                          Participant
+                                      </a>
+
+                                      <div class="btn-group" ng-if="data.people.length>1">
+                                          <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown">
+                                          Participants
+                                          <span class="caret"></span>
+                                          </button>
+                                          <ul class="dropdown-menu">
+                                              <li ng-repeat="p in data.people"><a href="../people_view/{{p.id}}">{{p.title}}</a></li>
+                                          </ul>
+                                      </div>
+                                  </div>
+
+
+                              </div>
+                          </div>
+
+                          <hr/>
+
+                          <dl class="dl-horizontal">
+                              <dt>Description</dt>
+                              <dd ng-bind-html="data.basic.description"></dd>
+
+                              <div ng-if="data.downloads">
+                              <br/>
+                                  <dt>Downloads</dt>
+                                  <dd>
+                                      <ul class="list-unstyled">
+                                          <li ng-repeat="item in data.downloads">
+                                              <a href="{{item.url}}">{{item.title}}</a>
+                                          </li>
+                                      </ul>
+                                  </dd>
+                              </div>
+
+                              <div ng-if="data.publications">
+                                  <dt>Publications</dt>
+                                  <dd>
+                                      <ul class="list-unstyled">
+                                          <li ng-repeat="publication in data.publications">
+                                              <p>
+                                                  <a href="../publication_view/{{publication.id}}">
+                                                      {{publication.title}}
+                                                  </a><br/>
+                                                  {{publication.author}}<br/>
+                                                  <i>{{publication.booktitle}} {{publication.journal}} - {{publication.year}}</i>
+                                              </p>
+                                          </li>
+                                      </ul>
+                                  </dd>
+                              </div>
+                          </dl>
+
+                          <ol class="breadcrumb">
+                              <li><a href="../../index.html">Home</a></li>
+                              <li><a href="../data">Data</a></li>
+                              <li class="active">{{data.basic.title}}</li>
+                          </ol>
+
+                          <div ng-include="'../../chunks/page-footer.html'"></div>
+                      </div>
+              </div>
+        </div>
+        <script src="../../js/jquery.js"></script>
+        <script src="../../bootstrap-3.1.1-dist/js/bootstrap.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular-route.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular-sanitize.js"></script>
+        <script src="../../nav/nav-controller.js"></script>
+        <script src="view-controller.js"></script>
+    </body>
+</html>

@@ -1,0 +1,127 @@
+setTimeout(function(){
+   var links = document.links;
+   var protocol = location.protocol;
+   var host = location.host;
+   for (var i = 0; i < links.length; i++) {
+	   var link_href = links[i].href;
+	   links[i].href = link_href.replace("cogcomp.cs.illinois.edu", host).replace("cogcomp.org", host);
+	   // adjust external links to open in a new tab
+       if (!links[i].toString().startsWith(protocol+"//"+host)){
+     	   links[i].target = "_blank";
+       }
+   }   
+}, 1000);
+
+//The code below allows support for the ES5 Object.keys function in older browsers
+// ES5 15.2.3.14
+// http://es5.github.com/#x15.2.3.14
+if (!Object.keys) {
+    var hasDontEnumBug = true,
+        dontEnums = [
+            "toString",
+            "toLocaleString",
+            "valueOf",
+            "hasOwnProperty",
+            "isPrototypeOf",
+            "propertyIsEnumerable",
+            "constructor"
+        ],
+        dontEnumsLength = dontEnums.length;
+
+    for (var key in {"toString": null}) {
+        hasDontEnumBug = false;
+    }
+
+    Object.keys = function keys(object) {
+
+        if (
+            (typeof object != "object" && typeof object != "function") ||
+            object === null
+        ) {
+            throw new TypeError("Object.keys called on a non-object");
+        }
+
+        var keys = [];
+        for (var name in object) {
+            if (owns(object, name)) {
+                keys.push(name);
+            }
+        }
+
+        if (hasDontEnumBug) {
+            for (var i = 0, ii = dontEnumsLength; i < ii; i++) {
+                var dontEnum = dontEnums[i];
+                if (owns(object, dontEnum)) {
+                    keys.push(dontEnum);
+                }
+            }
+        }
+        return keys;
+    };
+
+}
+
+
+function formatDate(dateString){
+	//Returns a date formatted as a string
+	var dateComponents = dateString.split("-");
+	if (dateComponents.length < 2) {
+		return null;
+	}
+	var year = dateComponents[0];
+	var truncatedYear = year.substring(2);
+	var month = dateComponents[1];
+	var day = dateComponents[2];
+	// does some basic validation to ensure that the date isn't a placeholder like "9999-99-99"
+	// or "0000-00-00"
+	var monthInt = parseInt(month);
+	var dayInt = parseInt(day);
+	if (monthInt < 1 || monthInt > 12) {
+		return null;
+	}
+	if (dayInt < 1 || dayInt > 31) {
+		return null;
+	}
+	return month + "/" + day + "/" + truncatedYear;
+}
+
+function filterTableData(tableData) {
+	// Takes in a list of rows in a table, where each row is a JSON object,
+	//and removes any invalid/missing data from the JSON objects
+	//Returns the filtered list of objects
+	
+	// A RegExp for finding dates in the data from the HTTP response so that these dates
+	// can be formatted
+	var dateIdentifier = new RegExp("[0-9]{4}-[0-9]{2}-[0-9]{2}");
+	var cleanedRows = [];
+	angular.forEach(tableData, function(oldRowObj){
+		var newRowObj = {};
+		var keys = Object.keys(oldRowObj);
+		for (var i = 0; i < keys.length; i++) {
+			var key = keys[i];
+			var value = oldRowObj[key];
+			// ignore invalid values
+			if (value === null) {
+				continue;
+			}
+			var valueType = typeof(value);
+			if (valueType === "string" && dateIdentifier.exec(value) != null) {
+				value = formatDate(value);
+				if (value === null) {
+					continue;
+				}
+			}
+			if (valueType === "number" && isNaN(value)) {
+				continue;
+			}
+			if (valueType === "undefined") {
+				continue;
+			}
+			// Reaching this point indicates that the value stored at the given key
+			// in the original conference object is valid
+			newRowObj[key] = value;
+		}
+		cleanedRows.push(newRowObj);
+	});
+	return cleanedRows;
+}

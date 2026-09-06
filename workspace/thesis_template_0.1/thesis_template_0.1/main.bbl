@@ -1,0 +1,247 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.2 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{nty/global//global/global}
+    \entry{arora2024}{inproceedings}{}
+      \name{author}{4}{}{%
+        {{hash=65df7121c46265befc895d1750539bb5}{%
+           family={Arora},
+           familyi={A\bibinitperiod},
+           given={Abhishek},
+           giveni={A\bibinitperiod}}}%
+        {{hash=cd119430d1370501d57e271be8928264}{%
+           family={Silcock},
+           familyi={S\bibinitperiod},
+           given={Emily},
+           giveni={E\bibinitperiod}}}%
+        {{hash=4a735478ec89043bd53a6a3e28ed7000}{%
+           family={Heldring},
+           familyi={H\bibinitperiod},
+           given={Leander},
+           giveni={L\bibinitperiod}}}%
+        {{hash=d8185990c5393dc7868ca18973b150ae}{%
+           family={Dell},
+           familyi={D\bibinitperiod},
+           given={Melissa},
+           giveni={M\bibinitperiod}}}%
+      }
+      \strng{namehash}{1937fc25faa15396e99531b223f944e9}
+      \strng{fullhash}{ad38edec2cb7afd39e428b9dc5e1dced}
+      \strng{bibnamehash}{1937fc25faa15396e99531b223f944e9}
+      \strng{authorbibnamehash}{1937fc25faa15396e99531b223f944e9}
+      \strng{authornamehash}{1937fc25faa15396e99531b223f944e9}
+      \strng{authorfullhash}{ad38edec2cb7afd39e428b9dc5e1dced}
+      \field{sortinit}{A}
+      \field{sortinithash}{2f401846e2029bad6b3ecc16d50031e2}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of EMNLP}
+      \field{title}{Contrastive Entity Coreference and Disambiguation for Historical Texts}
+      \field{year}{2024}
+    \endentry
+    \entry{mrefined2023}{inproceedings}{}
+      \name{author}{5}{}{%
+        {{hash=d17711d6bffe37e40b16c2495c607ea0}{%
+           family={Limkonchotiwat},
+           familyi={L\bibinitperiod},
+           given={Peerat},
+           giveni={P\bibinitperiod}}}%
+        {{hash=0593e8e837d2db67df6e489c29d35723}{%
+           family={Cheng},
+           familyi={C\bibinitperiod},
+           given={Weiwei},
+           giveni={W\bibinitperiod}}}%
+        {{hash=a870e7c2218dedf8fa395067da42b08f}{%
+           family={Christodoulopoulos},
+           familyi={C\bibinitperiod},
+           given={Christos},
+           giveni={C\bibinitperiod}}}%
+        {{hash=37254e5f40e0f003dc06992710c5052c}{%
+           family={Saffari},
+           familyi={S\bibinitperiod},
+           given={Amir},
+           giveni={A\bibinitperiod}}}%
+        {{hash=045d4294ee6b6936c99d278b857478b4}{%
+           family={Lehmann},
+           familyi={L\bibinitperiod},
+           given={Jens},
+           giveni={J\bibinitperiod}}}%
+      }
+      \strng{namehash}{5c67f44b87a1cfa348f81cf9be126744}
+      \strng{fullhash}{964ceba56fb27dd95cc9add389e6dc81}
+      \strng{bibnamehash}{5c67f44b87a1cfa348f81cf9be126744}
+      \strng{authorbibnamehash}{5c67f44b87a1cfa348f81cf9be126744}
+      \strng{authornamehash}{5c67f44b87a1cfa348f81cf9be126744}
+      \strng{authorfullhash}{964ceba56fb27dd95cc9add389e6dc81}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Findings of EMNLP}
+      \field{title}{mReFinED: An Efficient End-to-End Multilingual Entity Linking System}
+      \field{year}{2023}
+    \endentry
+    \entry{mvd2023}{inproceedings}{}
+      \name{author}{10}{}{%
+        {{hash=c4d8c39e3a63acab6d94c490b6d45028}{%
+           family={Liu},
+           familyi={L\bibinitperiod},
+           given={Yi},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=d12eaa4bcfe35e37d08f0d3d058861fd}{%
+           family={Tian},
+           familyi={T\bibinitperiod},
+           given={Yuan},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=0838975efd823c96d9fe318998235b56}{%
+           family={Lian},
+           familyi={L\bibinitperiod},
+           given={Jianxun},
+           giveni={J\bibinitperiod}}}%
+        {{hash=f0b30f46a1651ff938af38e8ee0ea476}{%
+           family={Wang},
+           familyi={W\bibinitperiod},
+           given={Xinlong},
+           giveni={X\bibinitperiod}}}%
+        {{hash=0254ca8ddd3c993310a37c6d2ecf7059}{%
+           family={Cao},
+           familyi={C\bibinitperiod},
+           given={Yanan},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=b9d3b9db95f47f8d5bd17131e005c474}{%
+           family={Fang},
+           familyi={F\bibinitperiod},
+           given={Fang},
+           giveni={F\bibinitperiod}}}%
+        {{hash=3fa0b98bdb0330cc0ea22e655fd964c2}{%
+           family={Zhang},
+           familyi={Z\bibinitperiod},
+           given={Wen},
+           giveni={W\bibinitperiod}}}%
+        {{hash=26644052764f1d651aa01c8601e984ac}{%
+           family={Huang},
+           familyi={H\bibinitperiod},
+           given={Haizhen},
+           giveni={H\bibinitperiod}}}%
+        {{hash=e750f08fd8093a75142446a34d8ecc43}{%
+           family={Deng},
+           familyi={D\bibinitperiod},
+           given={Denvy},
+           giveni={D\bibinitperiod}}}%
+        {{hash=16a6bb056f6786baa492ae9c2e59ac22}{%
+           family={Zhang},
+           familyi={Z\bibinitperiod},
+           given={Qi},
+           giveni={Q\bibinitperiod}}}%
+      }
+      \strng{namehash}{25448043b1d5de956b2f207fbb4e3dea}
+      \strng{fullhash}{d5a4359f6ec68ea845d8299567dd57dc}
+      \strng{bibnamehash}{25448043b1d5de956b2f207fbb4e3dea}
+      \strng{authorbibnamehash}{25448043b1d5de956b2f207fbb4e3dea}
+      \strng{authornamehash}{25448043b1d5de956b2f207fbb4e3dea}
+      \strng{authorfullhash}{d5a4359f6ec68ea845d8299567dd57dc}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of ACL}
+      \field{title}{Towards Better Entity Linking with Multi-View Enhanced Distillation}
+      \field{year}{2023}
+    \endentry
+    \entry{mhelllamo2026}{inproceedings}{}
+      \name{author}{3}{}{%
+        {{hash=1674ef8b051c96b4ced21b3637958ebf}{%
+           family={Santini},
+           familyi={S\bibinitperiod},
+           given={Cristian},
+           giveni={C\bibinitperiod}}}%
+        {{hash=6f5eab98e65d7d968c2b306241f37fd6}{%
+           family={Erp},
+           familyi={E\bibinitperiod},
+           given={Marieke},
+           giveni={M\bibinitperiod},
+           prefix={van},
+           prefixi={v\bibinitperiod}}}%
+        {{hash=dcb51233f87c9d1e1807502ca40ab070}{%
+           family={Alam},
+           familyi={A\bibinitperiod},
+           given={Mehwish},
+           giveni={M\bibinitperiod}}}%
+      }
+      \strng{namehash}{e69fd2b46c8597fd1858765a10ca6e93}
+      \strng{fullhash}{e69fd2b46c8597fd1858765a10ca6e93}
+      \strng{bibnamehash}{e69fd2b46c8597fd1858765a10ca6e93}
+      \strng{authorbibnamehash}{e69fd2b46c8597fd1858765a10ca6e93}
+      \strng{authornamehash}{e69fd2b46c8597fd1858765a10ca6e93}
+      \strng{authorfullhash}{e69fd2b46c8597fd1858765a10ca6e93}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of EACL}
+      \field{title}{It's All About the Confidence: An Unsupervised Approach for Multilingual Historical Entity Linking using Large Language Models}
+      \field{year}{2026}
+    \endentry
+    \entry{wu2020blink}{inproceedings}{}
+      \name{author}{5}{}{%
+        {{hash=9825446add26b320aea811f184ef643c}{%
+           family={Wu},
+           familyi={W\bibinitperiod},
+           given={Ledell},
+           giveni={L\bibinitperiod}}}%
+        {{hash=e1c32989a78998fe3c03c981d0da2dc7}{%
+           family={Petroni},
+           familyi={P\bibinitperiod},
+           given={Fabio},
+           giveni={F\bibinitperiod}}}%
+        {{hash=b6418275bb45466aa0755a545c7adfbc}{%
+           family={Josifoski},
+           familyi={J\bibinitperiod},
+           given={Martin},
+           giveni={M\bibinitperiod}}}%
+        {{hash=6cd024b217f3f2f8126e253b8c84d24d}{%
+           family={Riedel},
+           familyi={R\bibinitperiod},
+           given={Sebastian},
+           giveni={S\bibinitperiod}}}%
+        {{hash=1dbd3a5b42828fb2cebd7786488ba425}{%
+           family={Zettlemoyer},
+           familyi={Z\bibinitperiod},
+           given={Luke},
+           giveni={L\bibinitperiod}}}%
+      }
+      \strng{namehash}{ea6baa78d35b95598d6b239d1071a52e}
+      \strng{fullhash}{563afca05398f9a13db04777dd0d4c38}
+      \strng{bibnamehash}{ea6baa78d35b95598d6b239d1071a52e}
+      \strng{authorbibnamehash}{ea6baa78d35b95598d6b239d1071a52e}
+      \strng{authornamehash}{ea6baa78d35b95598d6b239d1071a52e}
+      \strng{authorfullhash}{563afca05398f9a13db04777dd0d4c38}
+      \field{sortinit}{W}
+      \field{sortinithash}{4315d78024d0cea9b57a0c6f0e35ed0d}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of EMNLP}
+      \field{title}{Zero-shot Entity Linking with Dense Entity Retrieval}
+      \field{year}{2020}
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

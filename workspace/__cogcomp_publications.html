@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="getPublications">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Publications - Cognitive Computation Group</title>
+    <link href="../../bootstrap-3.1.1-dist/css/bootstrap.css" rel="stylesheet">
+    <link href="../../css/global.css" rel="stylesheet">
+    <link rel="shortcut icon" type="image/x-icon" href="../../images/ccg.ico" />
+    <style>
+        #selector .btn-group-justified .btn {
+            text-align: left;
+            width: 100%;
+        }
+        
+        .list-group-item-heading {
+            font-size: 18px;
+        }
+        
+        .options .btn:hover,
+        #selector .btn .active:hover {
+            background-color: white;
+            box-shadow: none;
+        }
+        
+        .options .btn {
+            background-color: inherit;
+            box-shadow: none;
+            border: none;
+        }
+        
+        .btn-sm {
+            font-size: 14px;
+        }
+        
+        .options .btn.active {
+            box-shadow: none;
+            background-color: #c8e1ed !important;
+        }
+        
+        .options .btn.active:hover {
+            box-shadow: none;
+            font-weight: bold;
+        }
+        
+        .options .btn:hover {
+            font-weight: bold;
+        }
+        
+        div#topics {
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body ng-controller="getPublicationsController" ng-cloak>
+    <div ng-include="'../../chunks/navigation-top.html'"></div>
+    <div>
+        <div class="header-container">
+            <div class="inline" ng-include="'../../chunks/page-header-new.html'"></div>
+            <div class="navigation-container inline" ng-include="'../../chunks/navigation-side-new.html'"></div>
+        </div>
+        <div>
+            <h2>Publications</h2>
+            <div class="col-lg-10 col-lg-offset-1 col-md-10 col-sm-12 col-xs-12">
+                <div id="article">
+                    <div class='row'>
+                        <div class="col-sm-2 col-xs-12">Find bibfiles ccg.bib and cited.bib (and variants) <a href="https://github.com/CogComp/ccg-bibfiles">here</a>.
+                            <!--
+                            <a href="http://cogcomp.org/bib/ccg.bib">cogcomp</a> |
+                            <a href="http://cogcomp.org/bib/cited.bib">cited</a>
+-->
+
+                        </div>
+                        <div class='col-sm-10 col-xs-12'>
+                            <div class="input-group">
+                                <span class="input-group-addon"> <span class="glyphicon glyphicon-search"> </span> </span>
+                                <input type="text" id='search' class="form-control" placeholder="Filter by keyword in abstracts, authors, etc." ng-model="search" ng-click="representative=false">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class='options'>
+                        <div class="row" id="selector">
+                            <div class="col-sm-6">
+
+                                <h4>Topics (Approaches, Domains, and Tasks)</h4>
+
+                                <div class="btn-group btn-group-vertical btn-group-justified btn-group" id="topics">
+                                    <button type="button" class="btn btn-default btn-sm" ng-class="{'active':selected.topics['all']}" ng-click="click('topics', 'all')">
+                                        <b>All</b>
+                                    </button>
+                                    <button type="button" class="btn btn-default btn-sm" ng-repeat="t in data.topics" ng-class="{'active':selected.topics.array[t.id]}" ng-click="click('topics', t.title, t.id)">
+                                        <span class="glyphicon glyphicon-stop" style="color:#{{t.color}}"></span> &nbsp;&nbsp;{{t.title}}
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h4>Representative Publications</h4>
+                                <ul>
+                                    <li ng-repeat="publication in data.examples">
+                                        <a href="../publication_view/{{publication.pid}}">
+                  	                            {{publication.title}}
+                	                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class='row'>
+                            <div class="col-sm-6">
+
+                                <h4>Years</h4>
+
+                                <div class="btn-group btn-group-xs">
+                                    <button type="button" class="btn btn-default btn-sm" ng-class="{'active':selected.years['all']}" ng-click="click('years', 'all')">
+                                        <b>All</b>
+                                    </button>
+                                    <button type="button" class="btn btn-default btn-sm" ng-repeat="y in data.years" ng-class="{'active':selected.years.array[y.year-1990]}" ng-click="click('years', y.year, y.year-1990)">
+                                        {{y.year}}
+                                    </button>
+                                </div>
+                            </div>
+                            <!--<div class='col-md-3'>
+                                <h4>Venues</h4>
+                                <div class="btn-group btn-group-xs">
+                                    <button type="button" class="btn btn-default btn-sm" ng-class="{'active':selected.venues['all']}" ng-click="click('venues', 'all')">
+                                        <b>All</b>
+                                    </button>
+                                    <button type="button" class="btn btn-default btn-sm" ng-repeat="v in data.venues" ng-class="{'active':selected.venues.array[v.id]}" ng-click="click('venues', v.title, v.id)">
+                                        {{v.title}}
+                                    </button>
+                                </div>
+                            </div>-->
+
+                            <div class='col-md-3'>
+                                <h4>Categories</h4>
+                                <div class="btn-group btn-group-xs">
+                                    <button type="button" class="btn btn-default btn-sm" ng-class="{'active':selected.categories['all']}" ng-click="click('categories', 'all')">
+                                        <b>All</b>
+                                    </button>
+                                    <button type="button" class="btn btn-default btn-sm" ng-repeat="c in data.categories | orderBy:priority" ng-class="{'active':selected.categories.array[c.id]}" ng-click="click('categories', c.title, c.id)">
+                                        {{c.title}}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <br/>
+
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="list-group">
+                                <a href="../publication_view/{{pub.id}}" class="list-group-item" ng-repeat="pub in data.publications | filter:search | filter:match |  orderBy :localComparator ">
+                                    <span class="pull-right">
+                                        <span class="glyphicon glyphicon-stop"
+                                            ng-if="pub.topics!=''"
+                                            ng-repeat="i in pub.topics.split(',')"
+                                            style="color:#{{data.topics[i-1].color}}; margin:5px;"
+                                            custom-popover=""
+                                            popover-html="{{data.topics[i-1].title}}"
+                                            popover-placement="left"></span>
+                                    </span>
+                                    <b class="list-group-item-heading">
+                                        {{pub.title}}
+                                        </b>
+                                    <p class="list-group-item-text">
+                                        {{pub.author}}
+                                        <br/>
+                                        <small> <i> {{pub.booktitle}}{{pub.journal}}</i> - {{pub.years}}</small>
+                                    </p>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <ol class="breadcrumb">
+                        <li><a href="../../">Home</a></li>
+                        <li class="active">Publications</li>
+                    </ol>
+                    <div ng-include="'../../chunks/page-footer.html'"></div>
+                </div>
+            </div>
+        </div>
+        <script src="../../js/jquery.js"></script>
+        <script src="../../bootstrap-3.1.1-dist/js/bootstrap.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular-route.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular-sanitize.js"></script>
+        <script src="../../nav/nav-controller.js"></script>
+        <script src="../../js/popover.js"></script>
+        <script src="controller.js"></script>
+        <script src="../../js/global.js"></script>
+</body>
+
+</html>

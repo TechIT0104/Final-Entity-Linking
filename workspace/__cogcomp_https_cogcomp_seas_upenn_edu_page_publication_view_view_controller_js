@@ -1,0 +1,58 @@
+var id = window.location.pathname.split( '/' ).pop();
+
+var app = angular.module('getPublicationsView', ['getNav', 'hoverStuff', 'ngSanitize']); 
+
+app.controller('getPublicationsViewController', function($scope, $http) {
+	$http.get("view-backend.php?id=" + id).success(function(data){
+		$scope.data = data;
+        console.log(data);
+		
+		//this is some nasty business. essentially, we're taking a JSON structure and
+		//printing select parts of it as though it were LaTeX-style BiBTeX formatting.
+		//not every field from the JSON structure needs to be printed, so we define
+		//$scope.slots and iterate through it, printing things in the form
+		//    year = {2014},
+		//etc. The four spaces before each line are important for alignment purposes.
+		
+		$scope.slots = [
+            'author', 'title', 'booktitle', 'pages', 'month', 'year', 
+            'address', 'publisher', 'editor', 'instutution', 'journal', 
+            'volume', 'number', 'series', 'acceptance', 'note', 'url', 
+            'funding', 'projects', 'comment'
+        ];
+		
+		$scope.bibitem = "@" 
+            + $scope.data.basic.latex 
+            + "{" + $scope.data.basic.alias + ",\n";
+
+		for(var i=0; i<$scope.slots.length; i++){
+			var val = $scope.data.basic[$scope.slots[i]];
+			var idx = $scope.slots[i];
+			if (idx == 'booktitle') {
+				val = $scope.data.basic['expandedbooktitle'];
+			}
+			if (val) {
+				if (idx == 'acceptance'){
+                    			//tricky business here in order to preserve formatting during html data binding.
+                    			//it's all good, though.
+        				$scope.bibitem += "    " + idx + " = {" + val.replace('%','\\%') + "},\n";
+				} else if (idx == 'url'){
+        				$scope.bibitem += "    " + idx + " = \"" + val + "\",\n";
+				} else if (idx == 'title') {
+					$scope.bibitem += "    " + idx + " = {{" + val + "}},\n";
+    				} else if (val != "0"){
+        				$scope.bibitem += "    " + idx + " = {" + val + "},\n";
+    				}
+			}
+		}
+		
+		//`invisible' doesn't exist in the json, it exists in $scope.data.basic.
+		//so we handle it here instead.
+		
+		if ($scope.data.basic.visible == 0){
+			$scope.bibitem += "    invisible = {true}"; //four spaces to preserve alignment
+		}
+		
+		$scope.bibitem += "}"
+	});
+});

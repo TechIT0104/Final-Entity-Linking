@@ -1,0 +1,123 @@
+================================================================================
+                   TR2016 BENCHMARK - MANUAL EXECUTION GUIDE
+================================================================================
+
+PASSWORD: kmpooja123
+
+SETUP: Open 2 PowerShell terminals SIDE BY SIDE
+(Window > New Window to split screen, or use 2 monitor windows)
+
+================================================================================
+TERMINAL 1 - Server 80 (German + Spanish)
+================================================================================
+
+Copy & paste this command:
+
+ssh kmpooja@172.20.70.80 "source /DATA/kmpooja/mrefined_option1/venv/bin/activate && cd /DATA/kmpooja/mrefined_option1 && python3 -u src/refined/evaluation/multilingual_e2e_evaluation_tr2016.py --lang_title2wikidata /DATA/kmpooja/mrefined_option1/assets/data_combine_11_languages_wikidata_all_eng_label_desc/additional_data --mention2wikidata /DATA/kmpooja/mrefined_option1/assets/data_combine_11_languages_wikidata_all_eng_label_desc/additional_data --model /DATA/kmpooja/mrefined_option1/assets/finetune_models/mReFinED_Recall_9343 --data /DATA/kmpooja/mrefined_option1/assets/data_combine_11_languages_wikidata_all_eng_label_desc --datasets_root /DATA/kmpooja/mrefined_option1/assets/tr2016 --device cuda:0 2>&1 | tee ~/tr2016_server80_$(date +%Y%m%d_%H%M%S).log"
+
+Then press Enter and type password: kmpooja123
+
+This will run:
+  ✓ German (de) - Expected: 28.2% recall
+  ✓ Spanish (es) - Expected: 34.4% recall
+
+Estimated time: 45-60 minutes
+Look for: "Average recall: X.XXX" at the end
+
+================================================================================
+TERMINAL 2 - Server 170 (French + Italian)
+================================================================================
+
+WAIT for Terminal 1 to connect and start loading model (takes ~2 min)
+Then in Terminal 2, copy & paste:
+
+ssh kmpooja@172.20.70.170 "source /home/kmpooja/mrefined_170/venv/bin/activate && cd /home/kmpooja/mrefined_170 && python3 -u ReFinED/src/refined/evaluation/multilingual_e2e_evaluation_tr2016.py --lang_title2wikidata /home/kmpooja/mrefined_170/assets/data_combine_11_languages_wikidata_all_eng_label_desc/additional_data --mention2wikidata /home/kmpooja/mrefined_170/assets/data_combine_11_languages_wikidata_all_eng_label_desc/additional_data --model /home/kmpooja/mrefined_170/assets/finetune_models/mReFinED_Recall_9343 --data /home/kmpooja/mrefined_170/assets/data_combine_11_languages_wikidata_all_eng_label_desc --datasets_root /home/kmpooja/mrefined_170/assets/tr2016 --device cuda:0 2>&1 | tee ~/tr2016_server170_$(date +%Y%m%d_%H%M%S).log"
+
+Then press Enter and type password: kmpooja123
+
+This will run:
+  ✓ French (fr) - Expected: 25.3% recall
+  ✓ Italian (it) - Expected: 25.8% recall
+
+Estimated time: 45-60 minutes
+Look for: "Average recall: X.XXX" at the end
+
+================================================================================
+EXPECTED OUTPUT FORMAT
+================================================================================
+
+For each language, you'll see:
+
+[LANG de] start: datasets_dir=/...
+[LANG de] done: recall=0.2820  ← (28.2% expected)
+
+[LANG es] start: datasets_dir=/...
+[LANG es] done: recall=0.3440  ← (34.4% expected)
+
+[LANG fr] start: datasets_dir=/...
+[LANG fr] done: recall=0.2530  ← (25.3% expected)
+
+[LANG it] start: datasets_dir=/...
+[LANG it] done: recall=0.2580  ← (25.8% expected)
+
+Final line:
+Average recall: 0.2843  ← (28.4% expected)
+
+================================================================================
+TIMELINE
+================================================================================
+
+00:00 - Start Terminal 1 (Server 80)
+00:02 - Model loading on Server 80...
+00:05 - Start Terminal 2 (Server 170)
+00:07 - Both models loaded, processing begins...
+01:00 - Both should complete
+01:05 - All results available
+
+BOTH CAN RUN IN PARALLEL - different servers!
+
+================================================================================
+AFTER COMPLETION
+================================================================================
+
+Copy results from your terminal windows:
+
+Results Format to Document:
+  
+  German (de):     _____ % recall (expected 28.2%)
+  Spanish (es):    _____ % recall (expected 34.4%)
+  French (fr):     _____ % recall (expected 25.3%)
+  Italian (it):    _____ % recall (expected 25.8%)
+  Macro-average:   _____ % recall (expected 28.4%)
+
+Logs saved to:
+  Server 80: ~/tr2016_server80_TIMESTAMP.log
+  Server 170: ~/tr2016_server170_TIMESTAMP.log
+
+Retrieve logs:
+  scp kmpooja@172.20.70.80:~/tr2016_server80_*.log ./tr2016_server80.log
+  scp kmpooja@172.20.70.170:~/tr2016_server170_*.log ./tr2016_server170.log
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+Command not found errors:
+  → Path might be different. Check: 
+    ssh kmpooja@172.20.70.80 "ls -la /DATA/kmpooja/mrefined_option1/"
+
+Out of memory:
+  → Add to command: --batch_size 64 (instead of default 128)
+
+Connection timeout:
+  → Servers may be down. Check with:
+    ssh kmpooja@172.20.70.80 "uptime"
+
+CUDA errors:
+  → Use --device cpu (slower, but works)
+
+================================================================================
+READY? OPEN TWO TERMINAL WINDOWS AND START!
+================================================================================
+
+Good luck! 🚀 Expected runtime: 1-2 hours total.

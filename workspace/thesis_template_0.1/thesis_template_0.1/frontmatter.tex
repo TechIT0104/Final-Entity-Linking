@@ -1,0 +1,241 @@
+\frontmatter% Use roman page numbering style (i, ii, iii, iv...) for the pre-content pages
+
+\pagestyle{plain} % Default to the plain heading style until the thesis style is called for the body content
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\begin{titlepage}
+\begin{center}
+\begin{spacing}{1.2}
+
+{\huge \bfseries \ttitle\par}  % ← Uses thesis title from main.tex
+
+\vspace {5mm}
+\textit{A thesis submitted in partial fulfillment of the requirements\\for the award of the degree of} 
+
+\vspace{7mm}
+\textsc{\huge \MakeUppercase{\degreename}}  % ← Uses degree from main.tex
+
+\vspace {3mm}
+% Logo display - no figure environment needed on title page
+\includegraphics[width=5cm]{Figures/IIITA_Logo.jpg}
+\vspace{5mm}
+\begin{tabular}{p{0.55\textwidth} p{0.35\textwidth}}
+\textit{By:-} & \textit{Enrollment No.} \\
+\textsc{\studentonename} & \textsc{\studentoneroll} \\
+\textsc{\studenttwoname} & \textsc{\studenttworoll} \\
+\textsc{\studentthreename} & \textsc{\studentthreeroll} \\
+\end{tabular}\\[1cm]
+
+\textit{Submitted to the}\\[2mm]
+\textsc{\Large \deptname}\\ % ← Uses department from main.tex
+
+\vspace{8mm}
+% Hindi text commented out for pdfLaTeX compatibility
+% \begin{hindi}
+%     \textsc{\Large {भारतीय सूचना प्रौद्योगिकी संस्थान, इलाहाबाद}} \\
+% \end{hindi}
+% \vspace{3mm}
+\textsc{\Large \univname} % ← Uses university from main.tex
+
+\vspace{5mm}
+\today
+
+
+\end{spacing}
+\end{center}
+\end{titlepage}
+
+
+%----------------------------------------------------------------------------------------
+%	CERTIFICATE
+%----------------------------------------------------------------------------------------
+\checktoopen
+\begin{figure}[htp]
+    % \centering
+    \includegraphics[height=3cm,keepaspectratio]{Figures/IIITA_Header.png}
+\end{figure}
+% \string\setblankpagestyle \space
+\thispagestyle{empty}
+\vspace*{.06\textheight}
+
+\begin{spacing}{1.5}
+\begin{center}
+    {\centering\large\bfseries CERTIFICATE \par\vspace{10pt}}
+\end{center}
+
+\noindent It is certified that the work contained in the thesis titled \enquote{\ttitle} by {\studentnamescomma} has been carried out under my supervision and that this work has not been submitted elsewhere for a degree.
+% ↑ Uses title and student names from main.tex
+
+\vspace{3.5cm}
+\hfill\begin{minipage}{7.5cm}   %{0.52\linewidth}
+    \begin{spacing}{1.2}
+        \par
+        \rule{\textwidth}{0.2pt}\\
+        {\deptname}  \par
+        IIIT Allahabad \par
+    \end{spacing}
+\end{minipage}
+
+\end{spacing}
+% \end{certificate}
+\cleardoublepage
+
+%----------------------------------------------------------------------------------------
+%	DECLARATION
+%----------------------------------------------------------------------------------------
+\checktoopen
+\begin{figure}[htp]
+    % \centering
+    \includegraphics[height=3cm,keepaspectratio]{Figures/IIITA_Header.png}
+\end{figure}
+% \string\setblankpagestyle \space
+\thispagestyle{empty}
+\vspace{1mm}
+
+\begin{center}
+    {\large\bfseries CANDIDATE DECLARATION}
+\end{center}
+
+\begin{spacing}{1.2}
+
+\noindent \pronounwe, \studentnamesdeclaration, hereby certify that the thesis titled \enquote{\ttitle} has been submitted by \pronounour{} in partial fulfillment of the requirements for the Degree of \degreename{} in the \deptname{} at the \univname.
+% ↑ Uses pronouns and names from main.tex - automatically adjusts for single/multiple students
+
+\par
+\noindent We acknowledge that plagiarism includes: 
+\begin{enumerate} 
+    \item Reproducing another person's work (fully or partially) or ideas and presenting them as our own.
+    \item Copying or paraphrasing another person's work without appropriate attribution.
+    \item Engaging in literary theft by reproducing a unique literary construct without crediting its source.
+\end{enumerate}
+\par
+We affirm that due credit has been given to all original authors and sources through proper citations for words, ideas, diagrams, graphics, computer programs, experiments, results, and websites that are not our own contributions. Direct quotations have been appropriately marked, and sources have been properly referenced. Furthermore, we declare that no portion of our work is plagiarized. In the event of a plagiarism claim, we accept full responsibility for the contents of this thesis. We acknowledge that our supervisor may not be able to verify the originality of every aspect of our work.
+\end{spacing}
+
+\begin{spacing}{2.0}
+% \vspace{1cm}
+\noindent
+\begin{minipage}[t]{0.4\textwidth}  
+    \begin{flushleft} 
+        Place: \rule{40mm}{0.1pt}\\
+    \end{flushleft}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.4\textwidth}
+    \begin{flushright}         
+        Date: \rule{40mm}{0.1pt}\\       
+    \end{flushright}
+\end{minipage}
+% \rule{\textwidth}{0.1pt}\\
+\par
+{\studentsignatures} % ← Uses student names and rolls from main.tex
+\end{spacing}
+
+
+        
+\cleardoublepage
+
+
+
+%----------------------------------------------------------------------------------------
+%	QUOTATION PAGE
+%----------------------------------------------------------------------------------------
+
+% \vspace*{0.2\textheight}
+% \begin{spacing}{1.5}
+% \noindent\enquote{\itshape Thanks to my solid academic training, today I can write hundreds of words on virtually any topic without possessing a shred of information, which is how I also got a good job in industry.}\bigbreak
+
+% \hfill {\firstauthorname}
+% \end{spacing}
+% \cleardoublepage
+
+
+%----------------------------------------------------------------------------------------
+%	ABSTRACT PAGE
+%----------------------------------------------------------------------------------------
+
+\begin{abstract}
+\begin{spacing}{2}
+
+\addchaptertocentry{\abstractname} % Add the abstract to the table of contents
+This thesis presents an implementation-focused study of entity linking with an emphasis on the post-mid-semester phase: multilingual and historical EL. We briefly introduce the monolingual foundations (BLINK and MVD) and then focus on two post-mid-semester papers. First, we attempted to reproduce mReFinED and documented practical barriers: CUDA stack incompatibilities, tokenizer API breakages, PEM data format mismatches, dataset path issues, and evaluation discrepancies caused by corrupted TR2016 offsets. We successfully reproduced MEWSLI-9 evaluation and analyzed cross-script performance gaps.
+
+Second, we implemented MHEL-LLaMo, an unsupervised ensemble that combines a multilingual bi-encoder for candidate retrieval with an instruction-tuned LLM for NIL prediction and candidate selection. We reproduced the paper's best settings across multiple historical benchmarks, validated scores against repository artifacts, and introduced robustness improvements in the retrieval and RAG pipeline. The thesis consolidates system design, experiments, error analyses, and reproducibility procedures in clear, reproducible form.
+
+
+\end{spacing}
+\end{abstract}
+
+%----------------------------------------------------------------------------------------
+%	ACKNOWLEDGEMENTS
+%----------------------------------------------------------------------------------------
+
+\begin{acknowledgements}
+\begin{spacing}{1.5}
+\addchaptertocentry{\acknowledgementname} % Add the acknowledgements to the table of contents
+
+We thank the Department of Information Technology, IIIT Allahabad, for research infrastructure and guidance. We also acknowledge open-source contributors and the authors of BLINK, MVD, mReFinED, and MHEL-LLaMo whose work enabled our implementations and evaluations. We are grateful to peers who provided feedback during internal reviews and helped validate reproduction logs.
+\end{spacing}
+\end{acknowledgements}
+
+%----------------------------------------------------------------------------------------
+%	LIST OF CONTENTS/FIGURES/TABLES PAGES
+%----------------------------------------------------------------------------------------
+
+\tableofcontents % Prints the main table of contents
+
+\listoffigures % Prints the list of figures
+
+
+\listoftables % Prints the list of tables
+
+
+%----------------------------------------------------------------------------------------
+%	ABBREVIATIONS
+%----------------------------------------------------------------------------------------
+
+\begin{abbreviations}{ll} % Include a list of abbreviations (a table of two columns)
+
+\textbf{EL} & Entity Linking\\
+\textbf{MEL} & Multilingual Entity Linking\\
+\textbf{MD} & Mention Detection\\
+\textbf{ED} & Entity Disambiguation\\
+\textbf{KB} & Knowledge Base\\
+\textbf{MVD} & Multi-View Enhanced Distillation\\
+\textbf{LLM} & Large Language Model\\
+\textbf{SLM} & Small Language Model\\
+\textbf{RAG} & Retrieval-Augmented Generation\\
+\textbf{NIL} & No Entity in Knowledge Base\\
+
+\end{abbreviations}
+
+%----------------------------------------------------------------------------------------
+%	PHYSICAL CONSTANTS/OTHER DEFINITIONS
+%----------------------------------------------------------------------------------------
+
+\begin{constants}{lr@{${}={}$}l}
+Top-K retrieval & $K$ & Candidate list size\\
+Threshold & $\tau$ & Confidence cutoff for SLM/LLM routing\\
+Recall & $R$ & $\frac{TP}{TP + FN}$\\
+Precision & $P$ & $\frac{TP}{TP + FP}$\\
+F1 & $F_{1}$ & $\frac{2PR}{P + R}$\\
+\end{constants}
+
+%----------------------------------------------------------------------------------------
+%	SYMBOLS
+%----------------------------------------------------------------------------------------
+
+\begin{symbols}{lll}
+$m$ & Mention span & text span\\
+$e$ & Entity & KB entry\\
+$s(m,e)$ & Matching score & similarity\\
+$\tau$ & Confidence threshold & scalar\\
+\end{symbols}
+
+%----------------------------------------------------------------------------------------
+%	DEDICATION
+%----------------------------------------------------------------------------------------
+
+\dedicatory{To our families and mentors for sustained support.} 

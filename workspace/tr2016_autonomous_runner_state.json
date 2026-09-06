@@ -1,0 +1,45 @@
+{
+  "status": "waiting_for_dataset",
+  "dataset_health": {
+    "dataset_root": "/DATA/kmpooja/mrefined_option1/assets/tr2016",
+    "per_language": {
+      "de": {
+        "status": "OK",
+        "mentions_total": 1,
+        "mentions_real": 0,
+        "txt_total": 1,
+        "txt_real": 0
+      },
+      "es": {
+        "status": "OK",
+        "mentions_total": 1,
+        "mentions_real": 0,
+        "txt_total": 1,
+        "txt_real": 0
+      },
+      "fr": {
+        "status": "OK",
+        "mentions_total": 1,
+        "mentions_real": 0,
+        "txt_total": 1,
+        "txt_real": 0
+      },
+      "it": {
+        "status": "OK",
+        "mentions_total": 1,
+        "mentions_real": 0,
+        "txt_total": 1,
+        "txt_real": 0
+      }
+    },
+    "has_real_data": false,
+    "missing_or_empty_langs": [
+      "de",
+      "es",
+      "fr",
+      "it"
+    ],
+    "only_placeholder_or_empty": true
+  },
+  "updated_at": "2026-04-21 01:53:27"
+}

@@ -1,0 +1,105 @@
+# MHEL-LLAMO
+
+This is the official repository of the paper "[It’s All About the Confidence: An Unsupervised Approach for Multilingual Historical Entity Linking using Large Language Models](https://hal.science/hal-05440300/)".
+
+This project aims to provide a new state of the art in Historical Entity Linking by using an ensemble approach which combines a multilingual bi-encoder model \(BELA\) for candidate retrieval with prompt chaining for NIL prediction and candidate selection.
+
+<img src="mhel-llamo.png" alt="drawing" width="700"/>
+
+
+## Install Requirements
+
+Due to dependency issues, the bi-encoder requires a different huggingface version than LLMs. For this reason, we suggest to create two different conda environments.
+
+Note (Windows): FAISS GPU wheels are often not available on Windows. The code will run with CPU FAISS, but you may find it easier to use WSL2/Linux, or install FAISS via conda-forge (e.g., `conda install -c conda-forge faiss-cpu`).
+
+### Create BELA (bi-encoder) environment
+
+```
+conda create -n bela39 -y python=3.9 && conda activate bela39
+pip install -r requirements_bela.txt
+```
+
+### Create LLM environment
+```
+conda create -n llm -y python=3.9 && conda activate llm
+pip install -r requirements_llms.txt
+```
+
+## Perform Candidate Retrieval with BELA
+
+```
+conda activate bela39
+
+python get_candidates.py --dataset_path ./test_data/HIPE_EN --output_dir ./results/HIPE_EN --top_k 50 --lang en
+```
+
+## Perform NIL Prediction and Candidate Selection with LLM and Compute Metrics
+```
+conda activate llm
+
+python filter_and_prompt_chain.py \
+--json_f results/HIPE_EN/candidates_test_top50_en.json \
+--dataset_path ./test_data/HIPE_EN \
+--output_dir ./results/HIPE_EN \
+--threshold 21.24 \
+--n_candidates 20 \
+--model_id mistralai/Mistral-Small-24B-Instruct-2501
+
+# `--threshold` and `--n_candidates` are optional.
+
+# If the LLM repo is gated, authenticate once (preferred):
+#   huggingface-cli login
+# or set an env var (preferred over --hf_token):
+#   export HUGGINGFACE_HUB_TOKEN=...   # Linux/macOS
+#   setx HUGGINGFACE_HUB_TOKEN "..."  # Windows PowerShell
+
+python eval.py --path_data ./test_data/HIPE_EN --path_results ./results/HIPE_EN
+```
+
+## Reproducing Benchmark Study
+
+The following table reports the configuration which obtained the best F1 score on 4 benchmarks: HIPE-2020, NewsEye, AJMC and MHERCL. 
+
+| Dataset \(Language\)    | Script             |  N. of Candidates         |    Threshold           |    Model            | F1    |
+| ----------------------- | ------------------ | ------------------------- | ---------------------- | -----------------   | ----- |
+| HIPE-2020 (de) | filter_and_prompt_chain.py | 30                         | 21.4 | mistralai/Mistral-Small-24B-Instruct-2501   | 0.62 |
+| HIPE-2020 (en) | filter_and_prompt_chain.py | 20                         | \- | mistralai/Mistral-Small-24B-Instruct-2501   | 0.723 |
+| HIPE-2020 (fr) | filter_and_prompt.py | 20                         | \- | mistralai/Mistral-Small-24B-Instruct-2501   | 0.692 |
+| NewsEye (de) | filter_and_prompt_chain.py | 30                         | 25 | mistralai/Mistral-Small-24B-Instruct-2501   | 0.556 |
+| NewsEye (fi) | filter_and_prompt_chain.py | 20                         | \- | LumiOpen/Llama-Poro-2-8B-Instruct   | 0.509 |
+| NewsEye (fr) | filter_and_prompt_chain.py | 20                         | 21.35 | mistralai/Mistral-Small-24B-Instruct-2501   | 0.662 |
+| NewsEye (sv) | filter_and_prompt_chain.py | 20                         | 25 | google/gemma-3-27b-it   | 0.521 |
+| AJMC (de) | filter_and_prompt.py | 50                         | 21.5 | mistralai/Mistral-Small-24B-Instruct-2501   | 0.521 |
+| AJMC (en) | filter_and_prompt.py | 50                         | \- | mistralai/Mistral-Small-24B-Instruct-2501   | 0.496 |
+| HIPE-2020 (fr) | filter_and_prompt.py | 20                         | \- | mistralai/Mistral-Small-24B-Instruct-2501   | 0.636 |
+| MHERCL (en) | filter_and_prompt_chain.py | 20                         | \- | mistralai/Mistral-Small-24B-Instruct-2501   | 0.7 |
+| MHERCL (it) | filter_and_prompt_chain.py | 20                         | \- | mistralai/Mistral-Small-24B-Instruct-2501   | 0.698 |
+
+All experiments were carried by using a list of candidates retrieved by BELA, containing labels, descriptions and other metadata in the language of the dataset. An example is available [here](results/HIPE_FR/candidates_test_top50_fr.json).
+
+On low-resource settings, we suggest using [mistralai/Ministral-8B-Instruct-2410](https://huggingface.co/mistralai/Ministral-8B-Instruct-2410) for competitive performances in English, French and German and [google/gemma-3-12b-it](https://huggingface.co/google/gemma-3-12b-it) for Swedish.
+
+## Citation
+
+```
+@inproceedings{santini-etal-2026-confidence,
+    title = "It{'}s All About the Confidence: An Unsupervised Approach for Multilingual Historical Entity Linking using Large Language Models",
+    author = "Santini, Cristian  and
+      van Erp, Marieke  and
+      Alam, Mehwish",
+    editor = "Demberg, Vera  and
+      Inui, Kentaro  and
+      Marquez, Llu{\'i}s",
+    booktitle = "Proceedings of the 19th Conference of the {E}uropean Chapter of the {A}ssociation for {C}omputational {L}inguistics (Volume 1: Long Papers)",
+    month = mar,
+    year = "2026",
+    address = "Rabat, Morocco",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2026.eacl-long.184/",
+    doi = "10.18653/v1/2026.eacl-long.184",
+    pages = "3939--3954",
+    ISBN = "979-8-89176-380-7",
+    abstract = "Despite the recent advancements in NLP with the advent of Large Language Models (LLMs), Entity Linking (EL) for historical texts remains challenging due to linguistic variation, noisy inputs, and evolving semantic conventions. Existing solutions either require substantial training data or rely on domain-specific rules that limit scalability. In this paper, we present MHEL-LLaMo (Multilingual Historical Entity Linking with Large Language MOdels), an unsupervised ensemble approach combining a Small Language Model (SLM) and an LLM. MHEL-LLaMo leverages a multilingual bi-encoder (BELA) for candidate retrieval and an instruction-tuned LLM for NIL prediction and candidate selection via prompt chaining. Our system uses SLM{'}s confidence scores to discriminate between easy and hard samples, applying an LLM only for hard cases. This strategy reduces computational costs while preventing hallucinations on straightforward cases. We evaluate MHEL-LLaMo on four established benchmarks in six European languages (English, Finnish, French, German, Italian and Swedish) from the 19th and 20th centuries. Results demonstrate that MHEL-LLaMo outperforms state-of-the-art models without requiring fine-tuning, offering a scalable solution for low-resource historical EL. Our error analysis reveals that 41{\%} of false predictions exhibit semantic proximity to ground truth entities, highlighting the LLM{'}s accurate disambiguation of historical references."
+}
+```

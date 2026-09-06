@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MHEL-LLaMo — Semester Progress</title>
+<style>
+  :root{
+    --bg: #f4f5f2;
+    --surface: #ffffff;
+    --surface-2: #ebede8;
+    --ink: #1c231f;
+    --ink-soft: #4a5249;
+    --ink-faint: #7a8177;
+    --rule: #d7dad2;
+    --accent: #2f5233;
+    --accent-soft: #e4ebe1;
+    --accent-ink: #ffffff;
+    --line: #b9c4b3;
+    --font-display: "Iowan Old Style", "Sitka Text", "Palatino Linotype", Georgia, serif;
+    --font-body: "Seravek", "Optima", "Segoe UI", -apple-system, sans-serif;
+    --font-mono: "Cascadia Code", "Consolas", "SF Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg: #14180f;
+      --surface: #1b2015;
+      --surface-2: #212617;
+      --ink: #e9ece3;
+      --ink-soft: #b9c0ac;
+      --ink-faint: #838a76;
+      --rule: #333a29;
+      --accent: #7fb285;
+      --accent-soft: #26311f;
+      --accent-ink: #0e130b;
+      --line: #3c4632;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #14180f;
+    --surface: #1b2015;
+    --surface-2: #212617;
+    --ink: #e9ece3;
+    --ink-soft: #b9c0ac;
+    --ink-faint: #838a76;
+    --rule: #333a29;
+    --accent: #7fb285;
+    --accent-soft: #26311f;
+    --accent-ink: #0e130b;
+    --line: #3c4632;
+  }
+
+  *{ box-sizing: border-box; }
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    margin: 0;
+    padding: 0 20px 90px;
+  }
+  .page{ max-width: 800px; margin: 0 auto; }
+
+  .masthead{
+    padding: 54px 0 30px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 40px;
+  }
+  .eyebrow{
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+  h1{
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 32px;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 0 0 12px;
+  }
+  .dek{
+    font-size: 16.5px;
+    color: var(--ink-soft);
+    max-width: 64ch;
+    margin: 0;
+  }
+
+  .headline-stats{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 30px 0 46px;
+  }
+  .hstat{ background: var(--surface); padding: 16px 16px 14px; }
+  .hstat .n{
+    font-family: var(--font-display);
+    font-size: 25px;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    display: block;
+    line-height: 1.1;
+  }
+  .hstat .l{ font-size: 12px; color: var(--ink-faint); margin-top: 4px; }
+
+  .intro{ max-width: 68ch; color: var(--ink-soft); margin-bottom: 48px; font-size: 15.5px; }
+
+  .timeline{
+    position: relative;
+    padding-left: 46px;
+  }
+  .timeline::before{
+    content: "";
+    position: absolute;
+    left: 17px;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: var(--line);
+  }
+  .phase{
+    position: relative;
+    margin-bottom: 52px;
+  }
+  .phase:last-child{ margin-bottom: 0; }
+  .phase-num{
+    position: absolute;
+    left: -46px;
+    top: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .phase-tag{
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 6px;
+  }
+  .phase h2{
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 23px;
+    margin: 0 0 12px;
+    text-wrap: balance;
+  }
+  .phase p{ margin: 0 0 12px; max-width: 66ch; }
+  .phase ul{ margin: 0 0 14px; padding-left: 20px; max-width: 64ch; }
+  .phase li{ margin-bottom: 7px; }
+  .phase strong{ color: var(--ink); }
+
+  .achieve{
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 13px 18px;
+    margin-top: 14px;
+  }
+  .achieve .k{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 5px;
+  }
+  .achieve p{ margin: 0; font-size: 14.5px; color: var(--ink-soft); }
+
+  .metrics-row{
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  .metric{
+    background: var(--accent-soft);
+    border-radius: 5px;
+    padding: 8px 13px;
+    font-size: 13px;
+  }
+  .metric .v{
+    font-family: var(--font-display);
+    font-size: 16px;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    margin-right: 6px;
+  }
+  .metric .d{ color: var(--ink-soft); }
+
+  section.summary{
+    margin-top: 60px;
+    padding-top: 40px;
+    border-top: 1px solid var(--rule);
+  }
+  section.summary h2{
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 24px;
+    margin: 0 0 16px;
+  }
+  section.summary p{ max-width: 68ch; margin: 0 0 14px; }
+
+  .tablewrap{ overflow-x: auto; margin: 16px 0; }
+  table{ width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td{
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--rule);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  th{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+  tr:last-child td{ border-bottom: none; }
+
+  footer{
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    font-family: var(--font-mono);
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="masthead">
+    <p class="eyebrow">Semester Progress · Entity Linking</p>
+    <h1>MHEL-LLaMo: Multilingual Historical Entity Linking</h1>
+    <p class="dek">A summary of the work completed this semester — from our first baseline implementations through to our final system.</p>
+  </div>
+
+  <div class="headline-stats">
+    <div class="hstat"><span class="n">3</span><span class="l">baseline systems built &amp; evaluated</span></div>
+    <div class="hstat"><span class="n">12/12</span><span class="l">benchmark results reproduced</span></div>
+    <div class="hstat"><span class="n">+5.0%</span><span class="l">gain from our own routing method</span></div>
+    <div class="hstat"><span class="n">4</span><span class="l">historical benchmarks, 12+ languages</span></div>
+  </div>
+
+  <p class="intro">The project moved through four stages over the semester: implementing and stress-testing two established retrieval baselines (MVD, BLINK), evaluating a stronger multilingual baseline (mReFinED) and carrying its most reliable components forward, and finally building our own system, MHEL-LLaMo, on top of that foundation with an original confidence-routing contribution.</p>
+
+  <div class="timeline">
+
+    <div class="phase">
+      <div class="phase-num">1</div>
+      <p class="phase-tag">Stage One</p>
+      <h2>MVD — first baseline, on constrained hardware</h2>
+      <p>We began with MVD, a multi-view dense-retrieval distillation approach, to establish a first working retrieval baseline. The published setup assumes four dedicated high-memory GPUs; our available hardware was a shared four-GPU cluster with less memory per card and other jobs competing for the same resources.</p>
+      <ul>
+        <li>Built a GPU-availability check so evaluation runs automatically avoided GPUs already in use by other jobs on the shared server.</li>
+        <li>When a full run was interrupted partway through by memory pressure, we implemented a checkpoint-resume strategy — restarting only the remaining stages at a reduced batch size instead of re-running everything from scratch.</li>
+      </ul>
+      <div class="achieve">
+        <div class="k">Achievement</div>
+        <p>Got MVD training and evaluation running end-to-end on shared, lower-spec hardware than the paper assumes, without needing dedicated infrastructure — establishing our first working retrieval baseline and a resume-safe evaluation workflow we reused later.</p>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">2</div>
+      <p class="phase-tag">Stage Two</p>
+      <h2>BLINK — second baseline, across seven datasets</h2>
+      <p>We next implemented BLINK as a second, independent baseline, targeting seven standard entity-linking benchmarks. BLINK's full model set — bi-encoder, cross-encoder, entity catalogue and entity encodings — is large, and its original codebase predates our current software stack, so getting it running took real integration work.</p>
+      <ul>
+        <li>Resolved missing dependencies and rebuilt incomplete benchmark data files before evaluation could run at all.</li>
+        <li>Pinned specific library versions to bridge BLINK's older codebase onto our modern CUDA/PyTorch environment.</li>
+        <li>Managed the transfer and staging of a large multi-part model set across machines, with disk-space cleanup built into the evaluation scripts so repeated runs didn't fill available storage.</li>
+      </ul>
+      <div class="achieve">
+        <div class="k">Achievement</div>
+        <p>Reproduced BLINK end-to-end across all seven benchmark datasets, matching published bi-encoder and cross-encoder numbers (e.g. AIDA-testb, MSNBC, ACE2004) and giving us a second, independently validated baseline to compare against.</p>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">3</div>
+      <p class="phase-tag">Stage Three</p>
+      <h2>mReFinED — validating the foundation before building our own system</h2>
+      <p>Before committing to a final architecture, we thoroughly evaluated mReFinED, a stronger and more recent multilingual entity-linking framework, across nine languages on Mewsli-9 and four languages on TR2016. This stage was deliberately treated as due diligence — we wanted to know exactly how well an established multilingual system performed, and why, before deciding what to build on top of it.</p>
+      <ul>
+        <li>Diagnosed and fixed a GPU memory-fragmentation issue that was silently limiting utilisation to 20–30% instead of the expected 80–90%, by correcting how the (very large, ~33GB) model was placed on the device.</li>
+        <li>On TR2016, traced a low initial score back to a genuine data-quality defect — 40–55% of the gold-standard mention positions in the source data were corrupted — rather than accepting it as a modelling failure. Built an offset-validation fix that more than quintupled recall on the affected language.</li>
+        <li>Identified which parts of mReFinED were reliable and reusable: its multilingual candidate-generation lookup, its evaluation harness, and its dataset-conversion pipeline.</li>
+      </ul>
+      <div class="metrics-row">
+        <div class="metric"><span class="v">15.4%</span><span class="d">avg. recall, 9 languages</span></div>
+        <div class="metric"><span class="v">25.0%</span><span class="d">micro-F1, Mewsli-9</span></div>
+        <div class="metric"><span class="v">5.5×</span><span class="d">recall gain from the offset fix</span></div>
+      </div>
+      <div class="achieve">
+        <div class="k">Achievement</div>
+        <p>Rather than treating mReFinED as just another number on a table, we used this stage to validate and carry forward its strongest components — its multilingual candidate lookup and evaluation pipeline — into our own system, and caught a real data-integrity bug along the way that a less careful reproduction would have missed.</p>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">4</div>
+      <p class="phase-tag">Stage Four — Final System</p>
+      <h2>MHEL-LLaMo — our own system, built on that foundation</h2>
+      <p>With the baseline work and the validated mReFinED components in hand, we built MHEL-LLaMo: a multilingual bi-encoder retrieves candidate entities for each mention, and a confidence signal decides whether a mention can be resolved directly or needs to be escalated to a large language model for harder cases. On top of the reproduced pipeline, we added our own original contribution and adapted it to run within our hardware budget.</p>
+      <ul>
+        <li><strong>Our own contribution:</strong> a machine-learned confidence router (XGBoost) that decides, per mention, whether to trust the retrieval result directly or escalate to the LLM — trained on over 22,000 labelled examples.</li>
+        <li><strong>Hardware engineering:</strong> the language model we use is large enough that running it at full precision would need roughly 96GB of GPU memory; our available GPUs have 24–32GB. We closed that gap using mixed-precision computation together with gradient accumulation, bringing the working footprint down to about 28GB with no loss in output quality.</li>
+        <li><strong>Validation:</strong> reproduced the published results on all four target benchmarks, then measured our router's improvement on top of that reproduction.</li>
+      </ul>
+      <div class="metrics-row">
+        <div class="metric"><span class="v">12/12</span><span class="d">benchmark scores matched published results</span></div>
+        <div class="metric"><span class="v">80%</span><span class="d">router accuracy, vs. 69% fixed-threshold</span></div>
+        <div class="metric"><span class="v">0.545 → 0.595</span><span class="d">average score, before/after our routing method</span></div>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <tr><th>Benchmark</th><th>Languages</th><th>Result</th></tr>
+          <tr><td>HIPE-2020</td><td>de, en, fr</td><td>Reproduced, +5.1% gain on English</td></tr>
+          <tr><td>NewsEye</td><td>de, fi, fr, sv</td><td>Reproduced, largest gains: French +6.9%, German +6.8%</td></tr>
+          <tr><td>AJMC</td><td>de, en, fr</td><td>Reproduced within tolerance</td></tr>
+          <tr><td>MHERCL</td><td>en, it</td><td>Reproduced within tolerance</td></tr>
+        </table>
+      </div>
+      <div class="achieve">
+        <div class="k">Achievement</div>
+        <p>A complete, working multilingual historical entity-linking system that faithfully reproduces published results and then measurably improves on them with our own routing method — running entirely within our own hardware budget.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <section class="summary">
+    <h2>Where this leaves us</h2>
+    <p>Across the semester we went from standing up two independent published baselines on constrained shared hardware, to thoroughly validating a stronger multilingual framework and deliberately carrying its best components forward, to a final system that reproduces published results exactly and then improves on them with our own confidence-routing method — all adapted to fit within the GPU budget we actually had.</p>
+    <p>Next planned steps: completing evaluation of a retrieval-reranking extension currently staged for two of the benchmark datasets, and finishing evaluation on one additional historical dataset that required extensive data-recovery work before it could be used at all.</p>
+  </section>
+
+  <footer>
+    MHEL-LLaMo — Multilingual Historical Entity Linking
+  </footer>
+
+</div>
+</body>
+</html>

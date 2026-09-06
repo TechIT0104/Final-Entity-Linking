@@ -1,0 +1,27 @@
+\chapter{MEWSLI-9 Detailed Results}
+\label{AppendixB}
+
+This appendix reproduces the MEWSLI-9 evaluation summary that was generated during the mReFinED reproduction run.
+
+\begin{table}[ht]
+\centering
+\caption{MEWSLI-9 per-language metrics (reproduced).}
+\begin{tabular}{lcccc}
+\hline
+Language & F1 & Gold Recall & MD F1 & Time (s) \\
+\hline
+ar & 0.0005 & 0.9062 & 0.0004 & 54.1 \\
+de & 0.1788 & 0.8188 & 0.2429 & 279.6 \\
+en & 0.2320 & 0.8360 & 0.2661 & 277.9 \\
+es & 0.2292 & 0.7638 & 0.2565 & 201.3 \\
+fa & 0.0000 & 0.7809 & 0.0000 & 2.0 \\
+ja & 0.0014 & 0.8184 & 0.0026 & 41.7 \\
+sr & 0.0203 & 0.7863 & 0.0258 & 302.0 \\
+ta & 0.0000 & 0.6203 & 0.0007 & 33.2 \\
+tr & 0.2221 & 0.8244 & 0.1582 & 20.4 \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Interpretation}
+Latin-script languages consistently outperform non-Latin scripts. Gold recall remains high across languages, indicating that mention detection works but entity disambiguation is the primary bottleneck.

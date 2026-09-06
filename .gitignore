@@ -6,3 +6,23 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+# Consolidated workspace: keep source and documentation, omit local runtimes/data caches.
+workspace/.venv/
+workspace/**/.git/
+workspace/**/__pycache__/
+workspace/**/.pytest_cache/
+workspace/**/.mypy_cache/
+workspace/**/.cache/
+workspace/train_and_benchmark_data_temp/
+workspace/__mentions_raw_extracted/
+workspace/__mentions_new_corrected/
+workspace/_tr2016_cache/
+workspace/_tr2016_prepared/
+workspace/tmp_mrefined/
+workspace/_tmp_mrefined/
+workspace/_upstream_mrefined/
+workspace/mewsli_dataset/
+workspace/**/node_modules/
+workspace/**/site-packages/
+workspace/__xlwikifier_wikidata.zip

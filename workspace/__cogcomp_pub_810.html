@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="getPublicationsView" ng-controller="getPublicationsViewController">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="keywords" content="{{data.basic.author}},{{data.basic.title}},{{data.basic.journal}},{{data.basic.booktitle}},{{data.basic.year}}">
+        <meta name="description" content="{{data.basic.author}},{{data.basic.title}},{{data.basic.journal}},{{data.basic.booktitle}},{{data.basic.year}}">
+        <meta name="author" content="{{data.basic.title}}">
+        <title>{{data.basic.title}} - Publications - Cognitive Computation Group</title>
+        <link href="../../bootstrap-3.1.1-dist/css/bootstrap.css" rel="stylesheet">
+        <link href="../../css/global.css" rel="stylesheet">
+        <link rel="shortcut icon" type="image/x-icon" href="../../images/ccg.ico" />
+        <style>
+            .presentation-title {
+                display: inline-block;
+                overflow: hidden;
+                width: 161px;
+                height: 20px;
+                padding-left: 15px;
+                padding-top: 5px;
+                text-align: left;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+        </style>
+    </head>
+    <body ng-cloak>
+        <div ng-include="'../../chunks/navigation-top.html'"></div>
+        <div>
+            <div class="header-container">
+                <div class="inline" ng-include="'../../chunks/page-header-new.html'"></div>
+                <div class="navigation-container inline" ng-include="'../../chunks/navigation-side-new.html'"></div>
+            </div>
+            <div>
+                <h2>Publications</h2>
+                <div class="col-lg-10 col-lg-offset-1 col-md-10 col-sm-12 col-xs-12">
+                        <div id="article">
+                            <h3>
+                                {{data.basic.title}}
+                                <small>{{data.basic.year}}</small>
+                            </h3>
+                            <div class="row">
+                                <div class="col-md-12 text-center">
+                                    <a type="button btn-lg" class="btn btn-link" ng-if="data.basic.url" href="{{data.basic.url}}" >
+                                    Full Text
+                                    </a>
+                                    <!--  PROJECT -->
+                                    <a type="button" class="btn btn-link" ng-if="data.basic['proj_url']!=null && data.basic['proj_url']!=''" href="{{data.basic['proj_url']}}">
+                                    Project Webpage
+                                    </a> <!-- No dropdown here. -->
+                                    <!-- DATA -->
+                                    <a type="button" class="btn btn-link" ng-if="data.data.length==1" href="../resource_view/{{data.data[0].id}}">
+                                    Data
+                                    </a>
+                                    <div class="btn-group" ng-if="data.data.length>1">
+                                        <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown">
+                                        Data
+                                        <span class="caret"></span>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li ng-repeat="data in data.data"><a href="../resource_view/{{data.id}}">{{data.title}}</a></li>
+                                        </ul>
+                                    </div>
+                                    <!--  DEMO -->
+                                    <a type="button" class="btn btn-link" ng-if="data.demo.length==1" href="../demo_view/{{data.demo[0].nickname}}">
+                                    Demo
+                                    </a>
+                                    <div class="btn-group" ng-if="data.demo.length>1">
+                                        <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown">
+                                        Demo
+                                        <span class="caret"></span>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li ng-repeat="demo in data.demo"><a href="../demo_view/{{demo.nickname}}">{{demo.title}}</a></li>
+                                        </ul>
+                                    </div>
+                                    <!--  GITHUB -->
+                                    <a type="button" class="btn btn-link" ng-if="data.basic['github_url']!=null && data.basic['github_url']!=''" href="{{data.basic['github_url']}}">
+                                    Code
+                                    </a> <!-- No dropdown here. There can only be one github URL for a each publication -->
+                                    <!-- SOFTWARE -->
+                                    <a type="button" class="btn btn-link" ng-if="data.software.length==1" href="../software_view/{{data.software[0].nickname}}">
+                                    Software
+                                    </a>
+                                    <div class="btn-group" ng-if="data.software.length>1">
+                                        <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown">
+                                        Software
+                                        <span class="caret"></span>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li ng-repeat="s in data.software"><a href="../software_view/{{s.nickname}}">{{s.title}}</a></li>
+                                        </ul>
+                                    </div>
+                                    <!--  MODELS -->
+                                    <a type="button" class="btn btn-link" ng-if="data.model.length==1" href="../model_view/{{data.model[0].id}}">
+                                    Models
+                                    </a>
+                                    <div class="btn-group" ng-if="data.model.length>1">
+                                        <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown">
+                                        Models
+                                        <span class="caret"></span>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li ng-repeat="model in data.model"><a href="../model_view/{{model.id}}">{{model.title}}</a></li>
+                                        </ul>
+                                    </div>
+                                    <!-- POSTERS -->
+                                    <a type="button" class="btn btn-link" ng-if="data.poster.length==1" href="{{data.poster[0].link}}">
+                                    Poster
+                                    </a>
+                                    <div class="btn-group" ng-if="data.poster.length>1">
+                                        <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown">
+                                        Posters
+                                        <span class="caret"></span>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li ng-repeat="p in data.poster"><a href="{{p.link}}">{{p.title}}</a></li>
+                                        </ul>
+                                    </div>
+                                    <!-- PRESENTATIONS -->
+                                    <span ng-if="data.presentation.length==1"> <!-- Handles cases where only one presnetation is linked -->
+                                        <a type="button" class="btn btn-link" ng-if="data.presentation[0].link && !data.presentation[0].video_url" href="{{data.presentation[0].link}}">
+                                            Presentation <!-- presentation has only slides -->
+                                        </a>
+                                        <a type="button" class="btn btn-link" ng-if="data.presentation[0].video_url && !data.presentation[0].link" href="{{data.presentation[0].video_url}}">
+                                            Presentation <!-- presentation has only video -->
+                                        </a>
+                                        <div class="btn-group" ng-if="data.presentation[0].video_url && data.presentation[0].link">
+                                            <!-- presentation has slides and video -->
+                                            <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown">
+                                                Presentation
+                                                <span class="caret"></span>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a href="{{data.presentation[0].link}}">Slides</a></li>
+                                                <li><a href="{{data.presentation[0].video_url}}">Video</a></li>
+                                            </ul>
+                                        </div>
+                                    </span>
+                                    <div class="btn-group" ng-if="data.presentation.length>1">
+                                        <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown">
+                                        Presentations <!-- publication has multiple presentations -->
+                                        <span class="caret"></span>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li ng-repeat="p in data.presentation" style="width: max-content;">
+                                                <span class="presentation-title">{{p.title}}</span>:
+                                                <a ng-if="p.link" href="{{p.link}}" style="display: inline; color: #428bca;">Slides</a>
+                                                <span ng-if="p.video_url && p.link"> - </span>
+                                                <a ng-if="p.video_url" href="{{p.video_url}}" style="display: inline; color: #428bca;">video</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <!-- SUPPLEMENTARY -->
+                                    <a type="button" class="btn btn-link" ng-if="data.supp" href="{{data.supp[0].url}}">
+                                    Supplementary
+                                    </a>
+                                    <div class="btn-group" ng-if="data.supp.length>1">
+                                        <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown">
+                                        Supplementary
+                                        <span class="caret"></span>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li ng-repeat="s in data.supp"><a href="{{s.url}}">{{s.title}}</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr/>
+
+                            <div class="row" style="font-size:18px;"> 
+                                <div class="col-md-12">
+                                    <dl class="dl-horizontal">
+                                        <dt> CCG Authors </dt>
+                                        <dd>
+                                            <ul class='list-unstyled'>
+                                                <li ng-repeat="person in data.people">
+                                                    <a href="../people_view/{{person.id}}">
+                                                    {{person.title}}
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </dd>
+                                        <dt> Abstract </dt>
+                                        <dd>
+                                            <div ng-bind-html="data.basic.abstract"></div>
+                                        </dd>
+                                        <br/>
+                                        <dt> Citation </dt>
+                                        <dd>
+                                            <p>
+                                                {{data.basic.author}},
+                                                <a href="{{data.basic.url}}"><u>{{data.basic.title}}</u></a>
+                                                <i>{{data.basic.journal}} {{data.basic.booktitle}} </i>
+                                                ({{data.basic.year}})
+                                                <span ng-if="data.basic.pages">pp.{{data.basic.pages}}</span>
+                                            </p>
+                                        </dd>
+                                        <dt> Bibitem </dt>
+                                        <dd>
+                                            <pre style="font-size:16px;">{{bibitem}}</pre>
+                                        </dd>
+                                        <span ng-if="data.projects">
+                                            <dt> Projects </dt>
+                                            <dd>
+                                                <ul class="list-unstyled">
+                                                    <li ng-repeat="proj in data.projects">
+                                                        <a href="../project_view/{{proj.id}}">
+                                                        {{proj.title}}
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </dd>
+                                        </span>
+                                    </dl>
+                                </div>
+                            </div>
+                            <ol class="breadcrumb">
+                                <li><a href="../../">Home</a></li>
+                                <li><a href="../publications/">Publications</a></li>
+                                <li class="active">{{data.basic.title}}</li>
+                            </ol>
+                            <div ng-include="'../../chunks/page-footer.html'"></div>
+                        </div>
+                </div>
+            </div>
+        </div>
+        <script src="../../js/jquery.js"></script>
+        <script src="../../bootstrap-3.1.1-dist/js/bootstrap.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular-route.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular-sanitize.js"></script>
+        <script src="../../nav/nav-controller.js"></script>
+        <script src="../../js/popover.js"></script>
+        <script src="view-controller.js"></script>
+	<script src="../../js/global.js"></script>
+    </body>
+</html>

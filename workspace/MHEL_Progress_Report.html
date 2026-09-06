@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multilingual Historical Entity Linking — Progress Report</title>
+<style>
+  :root{
+    --bg: #f4f5f2;
+    --surface: #ffffff;
+    --surface-2: #ebede8;
+    --ink: #1c231f;
+    --ink-soft: #4a5249;
+    --ink-faint: #7a8177;
+    --rule: #d7dad2;
+    --accent: #2f5233;
+    --accent-soft: #e4ebe1;
+    --accent-ink: #ffffff;
+    --good: #2f6b3a;
+    --warn: #a05a1e;
+    --bad: #a3372f;
+    --link: #1f4d7a;
+    --font-display: "Iowan Old Style", "Sitka Text", "Palatino Linotype", Georgia, serif;
+    --font-body: "Seravek", "Optima", "Segoe UI", -apple-system, sans-serif;
+    --font-mono: "Cascadia Code", "Consolas", "SF Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg: #14180f;
+      --surface: #1b2015;
+      --surface-2: #212617;
+      --ink: #e9ece3;
+      --ink-soft: #b9c0ac;
+      --ink-faint: #838a76;
+      --rule: #333a29;
+      --accent: #7fb285;
+      --accent-soft: #26311f;
+      --accent-ink: #0e130b;
+      --good: #7fc98a;
+      --warn: #d99a52;
+      --bad: #e0776e;
+      --link: #7fb0da;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #14180f;
+    --surface: #1b2015;
+    --surface-2: #212617;
+    --ink: #e9ece3;
+    --ink-soft: #b9c0ac;
+    --ink-faint: #838a76;
+    --rule: #333a29;
+    --accent: #7fb285;
+    --accent-soft: #26311f;
+    --accent-ink: #0e130b;
+    --good: #7fc98a;
+    --warn: #d99a52;
+    --bad: #e0776e;
+    --link: #7fb0da;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    margin: 0;
+    padding: 0 20px 80px;
+  }
+  .page{
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  .masthead{
+    padding: 56px 0 28px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 36px;
+  }
+  .eyebrow{
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+  h1{
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 34px;
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 0 0 12px;
+    color: var(--ink);
+  }
+  .dek{
+    font-size: 17px;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin: 0 0 18px;
+  }
+  .meta{
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--ink-faint);
+    font-family: var(--font-mono);
+  }
+
+  .stats{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px,1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 0 0 44px;
+  }
+  .stat{
+    background: var(--surface);
+    padding: 16px 16px 14px;
+  }
+  .stat .n{
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    display: block;
+    line-height: 1.1;
+  }
+  .stat .l{
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-top: 4px;
+  }
+
+  section{ margin-bottom: 44px; }
+  .section-label{
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .section-label::after{
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+  }
+  h2{
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 24px;
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+    margin: 0 0 14px;
+  }
+  h3{
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 17px;
+    margin: 22px 0 8px;
+    color: var(--ink);
+  }
+  p{ margin: 0 0 14px; max-width: 68ch; color: var(--ink);}
+  p.lead{ color: var(--ink-soft); }
+  ul, ol{ margin: 0 0 14px; padding-left: 22px; max-width: 66ch; }
+  li{ margin-bottom: 6px; }
+  strong{ color: var(--ink); font-weight: 600; }
+  code{
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--ink);
+  }
+
+  .callout{
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 14px 18px;
+    margin: 16px 0;
+  }
+  .callout p{ margin: 0; color: var(--ink-soft); font-size: 14.5px; }
+  .callout p + p{ margin-top: 8px; }
+
+  table{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin: 10px 0 18px;
+  }
+  .tablewrap{ overflow-x: auto; }
+  th, td{
+    text-align: left;
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--rule);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  th{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+  tr:last-child td{ border-bottom: none; }
+
+  .pill{
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+  }
+  .pill.good{ background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
+  .pill.warn{ background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+  .pill.bad{ background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
+
+  .grid2{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 560px){ .grid2{ grid-template-columns: 1fr; } }
+  .card{
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 16px 18px;
+  }
+  .card h4{
+    font-family: var(--font-mono);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    margin: 0 0 8px;
+  }
+  .card p{ font-size: 14px; color: var(--ink-soft); margin: 0; }
+
+  footer{
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    font-family: var(--font-mono);
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="masthead">
+    <p class="eyebrow">Progress Review · Entity Linking Workspace</p>
+    <h1>What the Multilingual Historical Entity Linking project has actually produced</h1>
+    <p class="dek">A ground-up read of every folder in the repository — the core research pipeline, the baselines it was measured against, the dataset recovery effort, and the deliverable now packaged for supervisor review.</p>
+    <div class="meta">
+      <span>Reviewed 2026-08-09</span>
+      <span>~10 weeks of work, Jan–May 2026</span>
+      <span>Repo: Entity Linking</span>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="n">6</span><span class="l">benchmarks, 12+ languages</span></div>
+    <div class="stat"><span class="n">82%</span><span class="l">router accuracy vs 70% baseline</span></div>
+    <div class="stat"><span class="n">12/12</span><span class="l">paper results reproduced</span></div>
+    <div class="stat"><span class="n">5</span><span class="l">baseline systems benchmarked</span></div>
+    <div class="stat"><span class="n">96→28GB</span><span class="l">LLM footprint after precision/batch tuning</span></div>
+    <div class="stat"><span class="n">175+</span><span class="l">scripts spent hunting TR2016</span></div>
+  </div>
+
+  <section>
+    <p class="section-label">Overview</p>
+    <h2>One research thread, three layers of evidence</h2>
+    <p class="lead">Everything in this workspace serves one thesis: <strong>Multilingual Historical Entity Linking (MHEL‑LLaMo)</strong> — linking mentions in old, multilingual documents to the correct Wikidata entity (or correctly flagging "no match," NIL). The repo holds three things at once: the <strong>reproduction</strong> of a published method this work builds on, an <strong>original extension</strong> on top of it, and a large, separate <strong>baseline-comparison and dataset-recovery</strong> effort that stress-tests both against BLINK, GENRE, mReFinED, MVD and mulrel-nel on Mewsli‑9 and TR2016.</p>
+    <p>The reproduced method comes from <em>"It's All About the Confidence: An Unsupervised Approach for Multilingual Historical Entity Linking using Large Language Models"</em> (Santini, van Erp, Alam — EACL 2026). Its pipeline: a multilingual bi‑encoder called <strong>BELA</strong> retrieves candidate Wikidata entities per mention, a confidence score decides whether the mention is "easy" (take BELA's top‑1) or "hard" (hand it to an LLM — Mistral‑Small‑24B, Llama‑Poro‑2‑8B, or Gemma‑3‑27B depending on language), and the LLM performs NIL detection and final candidate selection through prompt chaining, entirely without fine‑tuning.</p>
+  </section>
+
+  <section>
+    <p class="section-label">Core system</p>
+    <h2>What was reproduced, and what was added on top</h2>
+    <p>The base pipeline was reproduced faithfully: <strong>12 of 12</strong> published per-dataset F1 scores across HIPE‑2020 (en/de/fr), NewsEye (de/fi/fr/sv), AJMC (en/de/fr) and MHERCL (en/it) matched the paper within a ±0.01 tolerance — average 0.595 reproduced vs. 0.608 published. That reproduction alone is a meaningful chunk of engineering: getting a 2021‑era bi‑encoder and a 24B‑parameter LLM to co‑exist on a single 32GB GPU required mixed precision, gradient accumulation, and Flash Attention.</p>
+    <p>On top of that reproduction, this project's own declared contribution (framed in its docs as roughly <strong>70% paper-inspired, 30% original</strong>) is:</p>
+    <div class="grid2">
+      <div class="card">
+        <h4>XGBoost confidence router</h4>
+        <p>Trained on 18,075 mention samples using top‑1 confidence, score margin, mention length and Levenshtein distance as features. Reaches <strong>82% routing accuracy</strong> against a 70% fixed‑threshold baseline — beating logistic regression (74%), random forest (78%), gradient boosting (79%) and a neural net (80%) in the same comparison. Shipped as a 50KB deployable model.</p>
+      </div>
+      <div class="card">
+        <h4>Systematic error analysis</h4>
+        <p>On AJMC‑EN (baseline 47.0% accuracy, F1 ≈44%), found abbreviations cause ~40% of false positives, 59% of false positives are NIL‑misclassifications, and WORK‑type entities are the hardest category — the kind of diagnosis that explains <em>why</em> the numbers are what they are, not just what they are.</p>
+      </div>
+      <div class="card">
+        <h4>RAG / ensemble extension</h4>
+        <p>A cross‑encoder reranker, a context‑augmentation step, and a tunable retrieval/reranker/LLM‑confidence ensemble (default weights 0.3/0.4/0.3) were built and a deployment bug fixed (an IndexError in the retriever from mismatched valid/invalid mention indices). Expected to add roughly +3–8% F1 on AJMC‑EN and +2–5% on NewsEye‑FI — this run was scripted and staged but its completion isn't confirmed in the current result files, so treat it as <span class="pill warn">in progress</span>, not banked.</p>
+      </div>
+      <div class="card">
+        <h4>Measurement honesty pass</h4>
+        <p>A second, stricter scoring pass ("honest" tables) re-derives F1 by joining strictly on document/position and accounting for gold mentions the pipeline silently failed to predict at all (coverage as low as 92.8% on NewsEye‑FI). Under that stricter lens, most scores drop slightly (e.g. HIPE‑EN 0.723 → 0.708) — the kind of self-audit that most reproduction efforts skip.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="section-label">Engineering</p>
+    <h2>Fitting a 24B model where a paper assumed 96GB</h2>
+    <p>The 96GB-vs-32GB framing shows up explicitly in the project's own slides (<code>final_presentation.py</code>, <code>professional_balanced_pptx.py</code>): "Mistral‑24B requires 96GB in FP32, we have 32GB GPU." That 96GB is the project's own back‑of‑envelope estimate (24B params × 4 bytes/param at FP32), not a number the original paper states — but the constraint it points at is real: a 24‑billion‑parameter model does not fit on a single consumer/workstation GPU at full precision, and the actual hardware available was a lot smaller than that.</p>
+    <p>The documented progression (research diary, <code>EXPERIMENTAL_VARIATIONS.md</code>) walks through the standard levers in order, with the memory footprint measured at each step:</p>
+    <div class="tablewrap">
+    <table>
+      <tr><th>Configuration</th><th>Footprint</th><th>Outcome</th></tr>
+      <tr><td>FP32 (paper-equivalent)</td><td>~96 GB</td><td><span class="pill bad">OOM on 32GB card</span></td></tr>
+      <tr><td>FP16</td><td>~48 GB</td><td><span class="pill bad">still OOM</span></td></tr>
+      <tr><td>8‑bit quantization</td><td>~24 GB</td><td><span class="pill warn">fits, slow</span></td></tr>
+      <tr><td>4‑bit quantization</td><td>~12 GB</td><td><span class="pill good">fits, fast</span></td></tr>
+      <tr><td>Mixed precision + gradient accumulation (selected)</td><td>~28 GB</td><td><span class="pill good">4GB headroom on 32GB card</span></td></tr>
+    </table>
+    </div>
+    <p>The configuration that actually shipped combines <strong>mixed-precision autocast</strong> with <strong>gradient accumulation over 4 steps</strong>, run at batch size 128 (a batch-size sweep found 128 the sweet spot at ~28GB / 8ms latency; 256 overflowed). The real inference code (<code>filter_and_prompt_chain.py</code>, <code>filter_and_prompt_rag.py</code>) defaults to loading the LLM in <strong>bfloat16</strong> rather than fp16 specifically, with an environment variable (<code>MHEL_TORCH_DTYPE</code>) to switch between fp16/bf16/fp32, plus HuggingFace Accelerate's <code>device_map="auto"</code> for automatic GPU/CPU offload and explicit memory caps (<code>MHEL_MAX_GPU_MEM=20GiB</code>, <code>MHEL_MAX_CPU_MEM=120GiB</code>) so the loader never overcommits a card. Interestingly, <code>bitsandbytes</code> is installed as a dependency but never actually invoked (no <code>load_in_4bit</code>/<code>load_in_8bit</code> calls found in the shipped scripts) — so the 4-bit/8-bit rows above look like an experiment that was tried and measured, but the version that ended up in production relies on bf16 + accumulation instead of quantization.</p>
+    <p>Hardware actually used: an <strong>RTX 5000 Ada (32GB)</strong> on one server and <strong>4× RTX 3090 (24GB each)</strong> on another. Worth flagging: <code>IMPLEMENTATION_DETAILS.md</code>/<code>EXPERIMENTAL_VARIATIONS.md</code> read as a written research narrative rather than raw profiler logs — the numbers are internally consistent but there's no raw <code>nvidia-smi</code> trace backing them in the repo, so treat them as the project's documented account rather than independently re-verifiable telemetry.</p>
+    <div class="callout">
+      <p><strong>On the NER-augmented Mewsli‑9 claim — I couldn't confirm this one.</strong> I searched every Mewsli-related script (<code>convert_mewsli.py</code>, <code>download_mewsli.py</code>, <code>preprocess_mewsli.py</code>, the mention-detection eval scripts) and grepped the whole repo for spaCy/Stanza/Flair or any "additional annotations" logic. All three Mewsli scripts are straight pass-throughs — they reformat the original <code>mentions.tsv</code> gold spans into HIPE/KILT-style files and print a converted-count that matches the input count 1:1. There's no step anywhere that runs a NER model over Mewsli text to add mentions beyond the original annotations, and no before/after mention-count table exists in any report. It's possible this lives only in the thesis PDF text (which wasn't machine-readable to the agent) or was done outside this repo — worth double-checking the thesis or your own notes for where that number came from before it goes in front of a supervisor.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="section-label">Data</p>
+    <h2>Six benchmarks, twelve-plus languages</h2>
+    <div class="tablewrap">
+    <table>
+      <tr><th>Benchmark</th><th>Languages</th><th>Mentions</th><th>Character</th></tr>
+      <tr><td>HIPE‑2020</td><td>en, de, fr</td><td>35,000</td><td>Historical newspapers, joint NER+EL</td></tr>
+      <tr><td>NewsEye</td><td>de, fi, fr, sv</td><td>5,200</td><td>1900s-era press</td></tr>
+      <tr><td>AJMC</td><td>en, de, fr (Ancient Greek corpus)</td><td>8,500</td><td>Classical philology texts</td></tr>
+      <tr><td>MHERCL</td><td>en, it</td><td>8,000</td><td>Medieval documents</td></tr>
+      <tr><td>Mewsli‑9</td><td>ar, de, en, es, fa, fr, ja, sr, tr</td><td>~10,000</td><td>Modern multilingual news, used for baseline comparison</td></tr>
+      <tr><td>TR2016</td><td>de, es, fr, it (Turkish-origin benchmark)</td><td>2,000</td><td>Cross‑lingual, extremely hard to source — see below</td></tr>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <p class="section-label">Comparison</p>
+    <h2>How the baselines actually performed</h2>
+    <p>A separate, substantial effort benchmarked five external systems, mostly on Mewsli‑9, largely on rented remote GPUs (172.20.70.80 / .170). The honest picture is mixed — some baselines came close to their papers, others fell far short, and the project's own docs are candid about why:</p>
+    <div class="tablewrap">
+    <table>
+      <tr><th>System</th><th>Task</th><th>Paper claim</th><th>Reproduced</th><th></th></tr>
+      <tr><td>mReFinED</td><td>Mewsli‑9 disambiguation</td><td>58.8% avg recall</td><td>15.4% avg recall / 25.0% F1</td><td><span class="pill bad">large gap</span></td></tr>
+      <tr><td>MVD</td><td>ZeShEL retrieval R@1</td><td>52.5%</td><td>51.9%</td><td><span class="pill good">close match</span></td></tr>
+      <tr><td>BLINK</td><td>7-dataset biencoder avg</td><td>—</td><td>≈82.7%</td><td><span class="pill good">on par</span></td></tr>
+      <tr><td>MHEL‑LLaMo (this work)</td><td>4 historical benchmarks</td><td>avg 0.608</td><td>avg 0.595</td><td><span class="pill good">12/12 reproduced</span></td></tr>
+    </table>
+    </div>
+    <p>The mReFinED gap is the most interesting finding, and it's diagnosed rather than hand-waved: mention detection stayed strong (62–91% gold recall) across all nine languages, but disambiguation collapsed specifically on non-Latin scripts — Arabic, Farsi, Japanese and Tamil all scored near 0% F1 while Latin-script languages (English, Spanish, German, Turkish) landed around 0.18–0.23. Some of the shortfall is a metric mismatch (end‑to‑end F1 vs. the paper's candidate Recall@1) and possibly a different checkpoint, but the script-dependent collapse looks like a genuine, reportable finding about how these multilingual encoders behave outside Latin script.</p>
+  </section>
+
+  <section>
+    <p class="section-label">Data archaeology</p>
+    <h2>The TR2016 dataset didn't want to be found</h2>
+    <p>TR2016 (Tsai &amp; Roth, NAACL 2016) has no HuggingFace mirror, no Kaggle copy, nothing conventional — and locating it turned into its own sub-project. The workspace holds <strong>175+</strong> root-level discovery scripts: scraping CogComp's live and Wayback‑archived publication pages, GitHub code search and grep.app sweeps for stray copies of the loader code, OpenAlex citation-graph lookups, and general web discovery sweeps. It eventually surfaced as <code>xlwikifier-wikidata.zip</code> (~268MB), hosted directly on CogComp's own server and linked from an internal resource page that standard search never reaches.</p>
+    <p>Getting it running wasn't the end of the trouble. A first pass reproduced only <strong>2.8%</strong> macro recall against a published <strong>28.4%</strong> — traced to <strong>40–55% corrupted mention offsets</strong> in the source data (only ~48% of character spans actually matched their labeled text). Filtering those out lifted German alone from 1.54% to 8.42% recall, still well short of the paper's 28.2%, but it correctly separated "our pipeline is broken" from "the data we were handed is broken." A small self-healing deployment layer — an autonomous runner polling every five minutes plus a watchdog with restart limits — was built specifically because remote transfers to the GPU servers kept silently failing. The last recorded status (2026‑04‑20) found the eval code fully working on GPU (cuda available, ~14GB VRAM, 95–100% utilization) but the four language directories on the remote server still held only placeholder files — the real data hadn't actually landed yet, so <span class="pill warn">TR2016 evaluation remains blocked</span> on that last transfer step.</p>
+    <div class="callout">
+      <p><strong>Why this matters more than it might look:</strong> the instinct to keep pushing on data provenance instead of accepting a bad number, and to separate a data-quality bug from a modeling bug, is exactly the kind of rigor a supervisor would want to see documented — even though the headline result (TR2016 recall) is still unfinished.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="section-label">Deliverable</p>
+    <h2>The "Final Entity Linking" package</h2>
+    <p>Separate from the working repo is a compact, purpose-built submission folder — <code>Final Entity Linking/</code> — assembled specifically to hand to a supervisor. It bundles a compiled thesis PDF (50+ pages), the XGBoost router model, cleaned result tables, five documentation guides (setup, usage, reproduction, datasets, structure), seven figures (architecture diagrams, per-benchmark F1 bar charts, the TR2016 offset-fix curve, MVD recall curves), and reading paths pitched at different time budgets — a 5‑minute skim, a 30‑minute review, or a full 2–3 hour reproduction walkthrough.</p>
+    <p>What stands out is that this package is <em>more conservative</em> than some of the working-repo status docs, not less: it explicitly flags a "1.0 accuracy" XGBoost result on a Mewsli‑9 subset as based on only 3 test records and calls it non-representative, rather than letting a flattering-looking number stand unqualified. That's a deliberate editorial choice for the audience it's built for.</p>
+  </section>
+
+  <section>
+    <p class="section-label">More detail</p>
+    <h2>Other facts worth knowing about</h2>
+    <div class="grid2">
+      <div class="card">
+        <h4>Prompt engineering ablation</h4>
+        <p>A simple instruction prompt hit 65% success; adding context → 78%; adding a candidates list → 88%; adding chain-of-thought → 91% (but 2× slower); few-shot examples → 92% (higher token cost). The candidates-list prompt (V3) shipped as default, with chain-of-thought (V4) left as an optional mode.</p>
+      </div>
+      <div class="card">
+        <h4>Per-dataset model routing</h4>
+        <p>Different LLMs per dataset/language: Mistral‑Small‑24B‑Instruct for HIPE‑DE (30 candidates, threshold 21.4), <code>Llama‑Poro‑2‑8B‑Instruct</code> for NewsEye‑FI, <code>gemma‑3‑27b‑it</code> for NewsEye‑SV (threshold 25), with smaller fallbacks (<code>Ministral‑8B</code>, <code>gemma‑3‑12b‑it</code>) for low-resource settings.</p>
+      </div>
+      <div class="card">
+        <h4>mReFinED compatibility fixes</h4>
+        <p>Six concrete patches were needed to run a 2021-era model on a modern stack: CUDA 13→12.8 downgrade, <code>tokenizer.encode_plus()</code> → <code>tokenizer()</code> for transformers v5+, PEM dict/list format handling, forced single-GPU placement, absolute dataset paths, unbuffered logging. Full 9-language Mewsli-9 run: ~24 minutes wall-clock at 85–95% GPU utilization.</p>
+      </div>
+      <div class="card">
+        <h4>TR2016 offset fix, precisely</h4>
+        <p>Fuzzy re-matching mention offsets within a ±5-character window took usable German mentions from ~30 to ~168 out of 2,000, lifting recall 1.54%→8.42% (5.5×) — still short of the paper's 28.2%, but it isolated a real data bug rather than a modeling one.</p>
+      </div>
+    </div>
+    <p class="lead" style="font-size:13.5px;">One loose end: the two server setup docs disagree with each other on the exact CUDA/PyTorch pin (11.8/2.6.0 in one guide vs. 12.4–12.8/2.8.0 in another) — worth reconciling before quoting a single version number externally.</p>
+  </section>
+
+  <section>
+    <p class="section-label">Where things stand</p>
+    <h2>Net assessment</h2>
+    <p>Three things are genuinely finished and solid: the base MHEL‑LLaMo pipeline reproduction (12/12 within tolerance), the XGBoost confidence router (a real, measured +12pt improvement over a sensible baseline), and the AJMC‑EN error analysis. Two things are real but incomplete: the RAG/ensemble extension (built, staged, results not yet confirmed) and TR2016 (root cause diagnosed, infrastructure built, data transfer still the last blocker). One thing is a cautionary finding rather than a win: mReFinED badly underperforming its paper on non-Latin scripts — worth reporting as-is rather than something to fix away.</p>
+    <p>The volume of near-duplicate status reports, four separate vendored copies of the mReFinED baseline, and dozens of one-off scraping scripts are the visible cost of that rigor — this was not a smooth run, and the repo shows the scaffolding it took to get real numbers out of uncooperative infrastructure and undiscoverable data. The <code>Final Entity Linking</code> folder is the cleaned-up answer to that mess, and it's the one worth handing to a supervisor as-is.</p>
+  </section>
+
+  <footer>
+    Compiled from a full pass over the repository — Final Entity Linking, MHEL‑LLAMO, MVD, BLINK, GENRE, mReFinED clones, and the root-level TR2016 pipeline.
+  </footer>
+
+</div>
+</body>
+</html>

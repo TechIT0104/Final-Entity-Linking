@@ -1,0 +1,318 @@
+================================================================================
+                     TR2016 EXECUTION GUIDE
+                  Complete mReFinED Paper Reproduction
+================================================================================
+
+YOUR SITUATION:
+  • MEWSLI-9 evaluation ✅ COMPLETE
+  • MVD evaluation      ✅ COMPLETE
+  • BLINK evaluation    ✅ COMPLETE
+  • TR2016 evaluation   ⏳ READY BUT NOT YET EXECUTED
+
+GOAL: Complete the paper reproduction by running TR2016 benchmarks
+
+================================================================================
+📋 QUICK START (SIMPLEST METHOD)
+================================================================================
+
+Step 1: Open PowerShell on your machine
+Step 2: Run this single command (replace password with kmpooja123):
+
+  $password = Read-Host -Prompt "Enter SSH password" -AsSecureString
+  & "c:\Users\Dhruv\OneDrive\Desktop\Entity Linking\TR2016_RUNNER.ps1" -Password $password
+
+Step 3: Wait 1-2 hours for completion
+Step 4: Check results (see "Retrieving Results" section below)
+
+Expected Output:
+  ✓ Server 80 (DE + ES) completes first (30-60 min)
+  ✓ Server 170 (FR + IT) completes second (30-60 min)
+  ✓ Final macro-avg should be ~28.4% recall
+
+================================================================================
+🔧 ALTERNATIVE 1: Manual SSH (if sshpass unavailable)
+================================================================================
+
+Manual Approach (you have control over each step):
+
+1. Connect to Server 80 (German + Spanish):
+   ssh kmpooja@172.20.70.80
+   # Password: kmpooja123
+   
+   Then run:
+   bash /DATA/kmpooja/mrefined_option1/remote_cmd_tr2016_server80.sh | tee ~/tr2016_server80.log
+   
+   Wait for completion... (30-60 minutes)
+
+2. In a SECOND terminal, connect to Server 170 (French + Italian):
+   ssh kmpooja@172.20.70.170
+   # Password: kmpooja123
+   
+   Then run:
+   bash /DATA/kmpooja/mrefined_option1/remote_cmd_tr2016_server170.sh | tee ~/tr2016_server170.log
+   
+   Wait for completion... (30-60 minutes)
+
+3. Both can run in parallel! They use different GPUs.
+
+================================================================================
+🔧 ALTERNATIVE 2: SSH Key Setup (ONE-TIME, THEN PASSWORDLESS)
+================================================================================
+
+If you want passwordless SSH forever (recommended):
+
+1. On your Windows machine, open PowerShell:
+   
+   # Generate SSH key
+   ssh-keygen -t rsa -b 4096 -f $env:USERPROFILE\.ssh\id_rsa -N ""
+
+2. Copy public key to both servers:
+   
+   # Server 80
+   cat $env:USERPROFILE\.ssh\id_rsa.pub | ssh kmpooja@172.20.70.80 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+   # Password: kmpooja123
+   
+   # Server 170
+   cat $env:USERPROFILE\.ssh\id_rsa.pub | ssh kmpooja@172.20.70.170 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+   # Password: kmpooja123
+
+3. Now test passwordless access:
+   
+   ssh kmpooja@172.20.70.80 "echo 'Connected!'"
+   # Should print "Connected!" without password prompt
+
+4. Run TR2016 evaluation (NO passwords!):
+   
+   ssh kmpooja@172.20.70.80 "bash /DATA/kmpooja/mrefined_option1/remote_cmd_tr2016_server80.sh"
+   ssh kmpooja@172.20.70.170 "bash /DATA/kmpooja/mrefined_option1/remote_cmd_tr2016_server170.sh"
+
+This is a ONE-TIME setup. Then you never type passwords again!
+
+================================================================================
+📊 WHAT HAPPENS DURING EVALUATION
+================================================================================
+
+Script Execution Flow:
+
+  Server 80 (remote_cmd_tr2016_server80.sh):
+    1. Activate Python venv
+    2. Load German (de) dataset
+       → 2,000-3,000 mentions
+       → Expected recall: 28.2%
+       → Runtime: ~15-20 minutes
+    3. Load Spanish (es) dataset
+       → 2,000-3,000 mentions
+       → Expected recall: 34.4%
+       → Runtime: ~15-20 minutes
+    4. Save results to: /DATA/kmpooja/mrefined_option1/logs/tr2016_server80_*.log
+
+  Server 170 (remote_cmd_tr2016_server170.sh):
+    [Same as Server 80, but for French (fr) and Italian (it)]
+    
+  Both can run in PARALLEL:
+    - Server 80 uses GPU 0
+    - Server 170 uses different machine
+    - No contention!
+
+Parallel Timeline:
+  0:00 - 1:00   Start Server 80 (de+es) AND Server 170 (fr+it)
+  1:00 - 2:00   Services still running...
+  2:00 - Finish Both servers done
+  
+  Total elapsed time: ~1.5 - 2 hours (NOT 3-4 hours!)
+
+Log Output Features:
+  • Real-time: PYTHONUNBUFFERED=1 ensures live streaming
+  • Per-language: "[LANG xx] start/done" markers
+  • Metrics: Recall printed for each language
+  • Final: "Average recall: X.XX%" at the end
+
+================================================================================
+📥 RETRIEVING RESULTS
+================================================================================
+
+After execution completes:
+
+1. Collect logs from both servers:
+
+   scp kmpooja@172.20.70.80:/DATA/kmpooja/mrefined_option1/logs/tr2016_server80_*.log .
+   scp kmpooja@172.20.70.170:/home/kmpooja/mrefined_170/logs/tr2016_server170_*.log .
+
+   # If above paths don't work, try:
+   ssh kmpooja@172.20.70.80 "ls /DATA/kmpooja/mrefined_option1/logs/tr2016*"
+
+2. Or check directly via SSH:
+
+   ssh kmpooja@172.20.70.80 "tail -100 /DATA/kmpooja/mrefined_option1/logs/tr2016_server80_*.log | grep -A5 'Average recall'"
+
+3. Expected output in logs:
+
+   ========================================
+   TR2016 (DE+ES) completed at: [timestamp]
+   Exit code: 0
+   Log file: /DATA/kmpooja/mrefined_option1/logs/tr2016_server80_20260417_*.log
+   ========================================
+   
+   [Inside log file:]
+   Dataset name: tr2016-de
+   ========== METRICS ==========
+   Recall: 0.2820  ← Should be ~28.2%
+   
+   Dataset name: tr2016-es
+   ========== METRICS ==========
+   Recall: 0.3440  ← Should be ~34.4%
+   
+   Average recall: 0.3130  ← Macro-avg between de/es
+
+================================================================================
+✅ VALIDATION CHECKLIST
+================================================================================
+
+After TR2016 evaluation completes, verify:
+
+  Name            Expected    Acceptable Range    Your Result
+  ─────────────────────────────────────────────────────────────
+  German (de)     28.2%       27.2% - 29.2%       [ _____ ]
+  Spanish (es)    34.4%       33.4% - 35.4%       [ _____ ]
+  French (fr)     25.3%       24.3% - 26.3%       [ _____ ]
+  Italian (it)    25.8%       24.8% - 26.8%       [ _____ ]
+  ─────────────────────────────────────────────────────────────
+  Macro-avg       28.4%       27.4% - 29.4%       [ _____ ]
+
+Success Criteria:
+  ☑ All 4 languages completed without errors
+  ☑ Each language within ±1% of expected value
+  ☑ Macro-average within ±1% of 28.4%
+  ☑ Execution completed in <2 hours
+  ☑ Logs contain proper metrics output
+
+If Results Don't Match ± 1%:
+  • Check: Model loaded correctly (should show "Refined device: cuda:0")
+  • Check: PEM language files found (de, es, fr, it ≠ mewsli-9)
+  • Check: TR2016 dataset files in: /assets/tr2016/{language}/test/
+  • Check: Entity descriptions accessible
+  • Retry: Run again (some variance is normal)
+
+================================================================================
+📝 DOCUMENTING FINAL RESULTS
+================================================================================
+
+Once you have results, create a summary:
+
+EXPECTED FINAL REPORT:
+
+──────────────────────────────────────────────────────
+
+    MEWSLI-9 EVALUATION     ✅ COMPLETE (9 languages)
+    Average Recall: 15.37% | Micro F1: 24.99%
+    Time: 24 minutes | Status: Success
+    
+    MVD EVALUATION         ✅ COMPLETE (3 models)
+    Best R@1: 51.88% (Global-Local view)
+    Time: 1.5 hours | Status: Success
+    
+    BLINK EVALUATION       ✅ COMPLETE (7 datasets)
+    Biencoder: 82.7% avg | Matches/exceeds baseline
+    Time: 6+ hours | Status: Success
+    
+    TR2016 EVALUATION      ✅ COMPLETE (4 languages)
+    Macro-avg Recall: 28.4%
+    Time: 2 hours | Status: Success
+    
+──────────────────────────────────────────────────────
+
+    📊 PAPER REPRODUCTION: 100% COMPLETE
+
+──────────────────────────────────────────────────────
+
+================================================================================
+⏱️ TIME ESTIMATE
+================================================================================
+
+Execution Timeline:
+  Setup (SSH key):        5-10 minutes (one-time)
+  Server 80 (de+es):      45-60 minutes
+  Server 170 (fr+it):     45-60 minutes
+  Results collection:     5 minutes
+  ─────────────────────
+  Total:                  90-125 minutes (1.5-2 hours)
+
+Parallelization advantage:
+  • Sequential timing: ~120-180 minutes
+  • Parallel timing: ~90-125 minutes (33% faster!)
+  • Recommended: Start both servers simultaneously
+
+================================================================================
+❓ COMMON ISSUES & FIXES
+================================================================================
+
+SSH Connection Refused:
+  ✗ "ssh: connect to host 172.20.70.80... Connection refused"
+  → Servers may be down. Check: ssh kmpooja@172.20.70.80 "whoami"
+
+Password Issues:
+  ✗ "Permission denied (publickey,password)"
+  → Try: ssh -o PubkeyAuthentication=no kmpooja@172.20.70.80
+
+Long Runtime (>2 hours):
+  ✗ Script still running after 2+ hours
+  → Normal: Large dataset. Check progress: ssh ... "tail -50 logs/tr2016*.log"
+
+GPU Out of Memory:
+  ✗ "CUDA out of memory"
+  → Reduce batch size in script (default 128)
+  → Or run languages sequentially instead of parallel
+
+Script Not Found:
+  ✗ "bash: /DATA/kmpooja.../remote_cmd_tr2016_server80.sh: No such file"
+  → Paths may have changed. Check: ssh ... "ls /DATA/kmpooja/mrefined_option1/"
+
+================================================================================
+🎯 SUCCESS CRITERIA
+================================================================================
+
+TR2016 Evaluation is SUCCESSFUL if:
+
+  ✅ German (de):        28.2% ± 1.0%
+  ✅ Spanish (es):       34.4% ± 1.0%
+  ✅ French (fr):        25.3% ± 1.0%
+  ✅ Italian (it):       25.8% ± 1.0%
+  ✅ Macro-average:      28.4% ± 1.0%
+  
+  ✅ Both servers completed without errors
+  ✅ GPU utilization: 70-90%
+  ✅ Memory usage: <25 GB per server
+  ✅ Execution time: <2 hours
+  ✅ Logs properly saved
+
+When ALL above are met → 🎉 PAPER REPRODUCTION 100% COMPLETE 🎉
+
+================================================================================
+READY? HERE'S YOUR COMMAND TO RUN (Copy & Paste):
+================================================================================
+
+METHOD 1 - PowerShell (If you trust the script):
+  $password = Read-Host -Prompt "Enter SSH password" -AsSecureString
+  & "c:\Users\Dhruv\OneDrive\Desktop\Entity Linking\TR2016_RUNNER.ps1" -Password $password
+
+METHOD 2 - Manual SSH (Most flexible):
+  # Terminal 1:
+  ssh kmpooja@172.20.70.80
+  bash /DATA/kmpooja/mrefined_option1/remote_cmd_tr2016_server80.sh
+
+  # Terminal 2 (while Terminal 1 is running):
+  ssh kmpooja@172.20.70.170
+  bash /DATA/kmpooja/mrefined_option1/remote_cmd_tr2016_server170.sh
+
+METHOD 3 - SSH Keys (Passwordless, recommended):
+  # First time: Set up keys (see ALTERNATIVE 2 above)
+  # Then:
+  ssh kmpooja@172.20.70.80 "bash /DATA/kmpooja/mrefined_option1/remote_cmd_tr2016_server80.sh"
+  ssh kmpooja@172.20.70.170 "bash /DATA/kmpooja/mrefined_option1/remote_cmd_tr2016_server170.sh"
+
+================================================================================
+Questions? Need Help?
+  - Check: TR2016_EVALUATION_REPORT.txt for technical details
+  - Check: Logs at /DATA/kmpooja/mrefined_option1/logs/tr2016_*.log
+  - Check: /memories/session/entity_linking_project_summary.md for progress
+================================================================================

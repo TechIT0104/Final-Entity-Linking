@@ -1,0 +1,33 @@
+\chapter{Reproducibility Appendix}
+\label{AppendixA}
+
+\section{mReFinED MEWSLI-9 Reproduction: Key Fixes}
+\begin{enumerate}
+		\item CUDA compatibility: upgraded/downgraded PyTorch to match CUDA 12.8 (cu128).
+		\item Tokenizer API: replaced deprecated \texttt{encode\_plus()} with \texttt{tokenizer()}.
+		\item PEM data: added dict/list handling in candidate generation.
+		\item Device placement: forced \texttt{--device cuda:0} and \texttt{CUDA\_VISIBLE\_DEVICES=0}.
+		\item Dataset root: added \texttt{--datasets\_root} to avoid path breakage.
+		\item Logging: enabled unbuffered output for live progress.
+\end{enumerate}
+
+\section{MEWSLI-9 Command Template}
+\begin{verbatim}
+python3 -u src/refined/evaluation/multilingual_e2e_evaluation_mewsli9.py \
+	--lang_title2wikidata "assets/data_combine_11_languages_wikidata_all_eng_label_desc/additional_data" \
+	--mention2wikidata "assets/data_combine_11_languages_wikidata_all_eng_label_desc/additional_data" \
+	--model "assets/finetune_models/mReFinED_Recall_9343" \
+	--data "assets/data_combine_11_languages_wikidata_all_eng_label_desc" \
+	--datasets_root "assets/mewsli_9_el_datasets" \
+	--device "cuda:0"
+\end{verbatim}
+
+\section{TR2016 Offset Validation (Key Insight)}
+Offset corruption was detected in TR2016 mention files. A validation filter that compares extracted span text to annotated mention text improved recall on German from 1.54\% to 8.42\%.
+
+\section{MHEL-LLaMo Best-Settings Driver}
+\begin{verbatim}
+bash ./rerun_all_best_settings.sh
+\end{verbatim}
+
+This script executes BELA candidate retrieval, LLM prompt selection, and evaluation for all datasets, writing outputs to \texttt{results/<DATASET>/<RUN\_NAME>/}.

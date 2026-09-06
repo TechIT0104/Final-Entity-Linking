@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="getIndex" ng-controller="getIndexController">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Cognitive Computation Group</title>
+    <link href="bootstrap-3.1.1-dist/css/bootstrap.css" rel="stylesheet">
+    <link href="css/global.css" rel="stylesheet">
+    <link href="css/home.css" rel="stylesheet">
+    <link href="css/responsive.css" rel="stylesheet">
+</head>
+
+<body ng-cloak>
+    <div ng-include="'chunks/navigation-top.html'"></div>
+    <div>
+        <div class="header-container">
+            <div class="inline" ng-include="'chunks/page-header-new.html'"></div>
+            <div class="navigation-container inline" ng-include="'chunks/navigation-side-new.html'"></div>
+        </div>
+
+        <div id="carousel-example-generic" class="carousel slide" data-ride="carousel">
+           <!-- 
+            <ol class="carousel-indicators">
+                <li data-target="#carousel-example-generic" data-slide-to="0" class="active"></li>
+                <li data-target="#carousel-example-generic" data-slide-to="1"></li>
+                <li data-target="#carousel-example-generic" data-slide-to="2"></li>
+                <li data-target="#carousel-example-generic" data-slide-to="3"></li>
+            </ol>
+            -->
+            <div class="carousel-inner">
+                <div class="item active" style="background-image: url(images/carousel-3.jpg);" data-link="/page/demos">
+                    <div class="carousel-caption">
+                        <p>
+                            Welcome to the Cognitive Computation Group at the <a href="http://cs.illinois.edu/">Department of Computer Science,</a>
+                            <a href="http://illinois.edu/">University of Illinois at Urbana-Champaign.</a>
+                        </p>
+                    </div>
+                </div><!--
+                <div class="item" style="background-image: url(images/carousel-3.jpg); background-position-y: -100px;" data-link="/page/demos">
+                    <div class="carousel-caption">
+                        <p>Demo Call to Action</p>
+                    </div>
+                </div>
+                <div class="item" style="background-image: url(images/carousel-3.jpg); background-position-y: -100px;" data-link="/page/publications">
+                    <div class="carousel-caption">
+                        <p>Publication Call to Action</p>
+                    </div>
+                </div>
+                <div class="item" style="background-image: url(images/carousel-3.jpg); background-position-y: -300px;" data-link="/page/software">
+                    <div class="carousel-caption"> 
+                        <p>Software</p>
+                    </div>
+                </div>-->
+            </div>
+			<!--
+            <a class="left carousel-control" href="#carousel-example-generic" data-slide="prev">
+                <span class="glyphicon glyphicon-chevron-left"></span>
+            </a>
+            <a class="right carousel-control" href="#carousel-example-generic" data-slide="next">
+                <span class="glyphicon glyphicon-chevron-right"></span>
+            </a>
+			-->
+        </div>
+        <div class="holder" style="margin-top: 1%">
+            <div class="inline width-50 welcome-paragraph">
+                <h3 style="text-align: center">Cognitive Computation Group @ Illinois</h3>
+                <p>
+                    Our research focuses on the computational foundations of intelligent behavior. We develop theories and systems pertaining to intelligent behavior using a unified methodology -- at the heart of which is the idea that learning has a central role in intelligence.
+                </p>
+                <p>
+                    Our work spans several aspects of this problem -- from theoretical questions in machine learning, knowledge representation and reasoning to experimental paradigms and large scale system development -- and draws on methods from theoretical computer science,
+                    probability and statistics, artificial intelligence, linguistics and experimental computer science.
+                </p>
+                <p>
+                    Check out our <a href="page/software">software</a>, <a href="page/demos">demos</a>, and <a href="page/publications">publications</a>.
+                </p>
+            </div>
+            <div class="inline chart bar width-50"></div>
+            <ol class="breadcrumb hidden-sm hidden-xs">
+                <li class="active">Home</li>
+            </ol>
+            <div ng-include="'chunks/page-footer.html'"></div>
+        </div>
+    </div>
+    <script src="js/jquery.js"></script>
+    <script src="js/d3.v3.min.js"></script>
+    <script src="index-graph.js"></script>
+    <script src="js/jquery.transit.min.js"></script>
+    <script src="bootstrap-3.1.1-dist/js/bootstrap.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular-route.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular-sanitize.js"></script>
+    <script src="nav/nav-controller.js"></script>
+    <script src="index-controller.js"></script>
+    <script>
+        $(window).resize(function() {
+            var scope = angular.element($("html")).scope();
+            graphPublications(scope.data.topics);
+        });
+		$('.item').click(function(e){
+			var link = $(e.currentTarget).data("link")
+			window.location.href = "http://" + window.location.hostname + link;
+		});
+    </script>
+</body>
+
+</html>

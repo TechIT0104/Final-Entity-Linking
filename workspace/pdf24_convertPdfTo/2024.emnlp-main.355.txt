@@ -1,0 +1,821 @@
+﻿Contrastive Entity Coreference and Disambiguation for Historical Texts
+
+Abhishek Arora1†, Emily Silcock1†, Leander Heldring2,3, Melissa Dell1,2∗
+1Harvard University; Cambridge, MA, USA.
+
+2National Bureau of Economic Research; Cambridge, MA, USA.
+3Kellogg School of Management, Northwestern University, Evanston, IL, USA.
+
+† These authors contributed equally. ∗Corresponding author: melissadell@fas.harvard.edu.
+
+Abstract While there is a large literature on entity dis-
+Massive-scale historical document collections ambiguation to a knowledge base (but to a lesser
+are crucial for social science research. Despite extent, entity coreference across documents in a
+increasing digitization, these documents typi- corpus), we found that existing methods did not
+cally lack unique cross-document identifiers for meet our accuracy requirements when applied to
+individuals mentioned within the texts, as well historical documents. Some widely-used meth-
+as individual identifiers from external knowl- ods require the entity to be in the knowledge base,
+edge bases like Wikipedia/Wikidata. Existing whereas historical documents are replete with indi-
+entity disambiguation methods often fall short
+in accuracy for historical documents, which viduals not in Wikipedia. Indeed, one motivation
+are replete with individuals not remembered for disambiguating entities in historical texts is to
+in contemporary knowledge bases. This study understand why some people are remembered and
+makes three key contributions to improve cross- others are not. Historical texts have a different dis-
+document coreference resolution and disam- tribution of entities than modern texts; for example,
+biguation in historical texts: a massive-scale there may be fewer hyperlinks in crawl corpora - a
+training dataset replete with hard negatives - common source of training data - to these individ-
+that sources over 190 million entity pairs from uals’ Wikipedia pages. Moreover, historical texts
+Wikipedia contexts and disambiguation pages -
+high-quality evaluation data from hand-labeled often have OCR noise, and language can evolve
+historical newswire articles, and trained models across time. To feasibly run entity disambiguation
+evaluated on this historical benchmark. We con- over massive-scale historical texts, the method also
+trastively train bi-encoder models for corefer- needs to be highly computationally efficient, as
+encing and disambiguating individuals in histor- academic and archival budgets are typically highly
+ical texts, achieving accurate, scalable perfor- constrained, and the amount of potential historical
+mance that identifies out-of-knowledge base in- material to disambiguate is vast.
+dividuals. Our approach significantly surpasses
+other entity disambiguation models on our his- This study makes three central contributions de-
+torical newswire benchmark. Our models also signed to improve and encourage further research
+demonstrate competitive performance on mod- on cross-document coreference resolution and dis-
+ern entity disambiguation benchmarks, particu- ambiguation of individuals in historical texts: a
+larly on certain news disambiguation datasets. massive-scale training dataset replete with hard
+
+1 Introduction negatives, high quality evaluation data drawn from
+historical documents, and entity coreference and
+
+Massive scale historical document collections - disambiguation models trained and evaluated on
+such as historical newspapers or the 14 billion doc- these data.
+uments in the U.S. National Archives - are cen- Our first contribution is to train coreference and
+tral source materials for social science research. disambiguation models, with a focus on historical
+While historical documents are increasingly be- texts, and news in particular. Our aims are: 1) ac-
+ing digitized, they are not typically tagged with curate performance, 2) highly scalable, 3) allowing
+unique cross-document identifiers for individuals out-of-knowledge base mentions, and 4) trainable
+mentioned in the texts, or with individual iden- with simple recipes and limited compute.
+tifiers from an external knowledge base such as A contrastively trained bi-encoder retrieval ar-
+English Wikipedia/Wikidata, which provides struc- chitecture, widely used for open-domain retrieval
+tured data for over a million individuals. (e.g., Karpukhin et al. (2020)), is an excellent fit
+
+6174
+Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing, pages 6174–6186
+
+November 12-16, 2024 ©2024 Association for Computational Linguistics
+
+
+
+for these requirements. In a contrastively trained (e.g., with hyperlinks to John F. Kennedy’s page)
+bi-encoder, the neural network encodes mentions and pair them with contexts mentioning other enti-
+(in the document corpus or a knowledge base) that ties from the John Kennedy disambiguation page.
+refer to the same entity nearby in embedding space We overrepresent hard negatives from within fam-
+and encodes mentions referring to different enti- ilies (e.g., paired mentions of Henry Ford Jr. and
+ties further apart. At inference time, a given entity Henry Ford Sr.) by mining family members from
+mention is disambiguated to the nearest entry of Wikidata pages. These challenging cases are very
+the knowledge base if their encodings are within common in historical texts (e.g., fathers and sons
+some threshold similarity. If the mention encoding with the same name and profession). Constructing
+is sufficiently dissimilar to all entries in the knowl- our open-source WikiConfusables required sub-
+edge base, the entity is marked as out-of-knowledge stantial wrangling of Wikipedia dumps, and we
+base. Analogously, an arbitrary number of entity have made it publicly available (CC-BY) to allow
+mentions across documents in a corpus (e.g.,, dif- other researchers to more easily exploit this rich
+ferent newspaper articles) can be coreferenced by source of information.
+clustering their embeddings. The extensive hard negative pairs in
+
+This approach is highly scalable because each WikiConfusables allow us to contrastively
+entity mention and entry in the knowledge base is train our entity coreference and disambiguation
+embedded only once, no matter how many entities models on four Nvidia A6000 GPU cards, a
+are to be disambiguated. Moreover, a Facebook AI modest setup by deep learning standards. In
+Similarity Search (FAISS) (Johnson et al., 2019) contrast, contrastive training with random negative
+backend can be used to retrieve the most similar pairs requires massive batch sizes to achieve strong
+knowledge base embedding for each mention in the performance (He et al., 2020).
+document corpus. FAISS is extremely optimized, We train our LinkMentions coreference model
+scaling up to billion-scale datasets on relatively on paired contexts around Wikipedia mention hy-
+modest hardware. This architecture also easily han- perlinks. We further tune this coreference model
+dles out-of-knowledge-base entities. Assuming an for disambiguation, creating LinkWikipedia, by
+appropriate training dataset, it is straightforward training on paired contexts and first paragraphs. If
+to train, making it feasible, even on a highly con- desired, this model can be further tuned on target
+strained academic compute budget, to update the data. We do so for historical newspapers, creat-
+models as the deep learning literature advances or ing the LinkNewsWikipedia model by tuning on a
+to tune them for specific document collections. hand-labeled dataset linking individuals in newspa-
+
+A second central contribution of the paper is pers to Wikipedia.
+the creation of a massive-scale dataset for con- A third contribution is the development of a high
+trastive training of entity coreference and entity quality benchmark that coreferences and disam-
+disambiguation models. WikiConfusables con- biguates individuals in historical newswire arti-
+structs over 190 million entity pairs for contrastive cles from the 1950s and 1960s, that appear in the
+training. Positive pairs come from contexts (para- Newswire dataset (Silcock et al., 2024). We hand
+graphs) in Wikipedia that contain hyperlinks to the disambiguate entities - or mark them as not in the
+same page (for coreference), or from a context and knowledge base - creating the Entities of the
+the first paragraph of the relevant entity that it links Union historical benchmark.
+to (for disambiguation). We document performance on Entities of
+
+We obtain hard negative entity pairs - e.g., pairs the Union that significantly exceeds that of other
+that are highly confusable - at scale from Wikipedia widely used entity disambiguation models. We are
+disambiguation pages, which list entities that have also competitive in disambiguating individuals in
+confusable names or aliases. The hard negative modern benchmarks, especially on the MSNBC
+pairs come from contexts that link to different and ACE2004 benchmarks (both of which disam-
+pages on a given disambiguation page. For ex- biguate modern news), where we outperform other
+ample, the disambiguation page "John Kennedy" state-of-the-art models. This suggests that our mod-
+includes John F. Kennedy the president, John els and training data have broader applications be-
+Kennedy (Louisiana politician), John F. Kennedy yond historical documents, especially to modern
+Jr, and a variety of other John Kennedys. Hard neg- news.
+atives sample contexts mentioning John F. Kennedy Cross-document coreference is moreover highly
+
+6175
+
+
+
+accurate. Cross-document coreference resolution 2018) bi-encoder and a re-ranking cross-encoder.
+is often central to cataloging historical document The model assumes all entities are in the knowledge
+collections, and can be applied as a first step to base. This study updates the bi-encoder architec-
+creating a knowledge base when the individuals ture with advances made over the past five years
+in a corpus are not covered in existing knowledge (such as using mean pooling rather than a [CLS] to-
+bases. ken for the representation (Reimers and Gurevych,
+
+Finally, we briefly illustrate some of the facts 2019) and advances in training efficiency). It also
+that can be gleaned from tagging unique individuals develops an expansive training dataset, replete with
+in historical document collections, by applying the hard negatives. We develop a coreference model
+LinkNewsWikipedia model to a large-scale histor- and incorporate it into the disambiguation pipeline
+ical news dataset. We are enthusiastic about the and allow for out-of-knowledge base individuals.
+promise of coreferenced and disambiguated histori- Another well-known model that uses a bi-
+cal documents to lead to many informative insights. encoder is ReFinED (Ayoola et al., 2022), an en-
+Our datasets and models are open-source, with a tity linking model that performs mention detection
+CC-BY license, and we hope that they encourage and disambiguation for all mentions within a doc-
+further engagement with historical cross-document ument in a single pass. Like BLINK, it uses a bi-
+coreference resolution and disambiguation. encoder architecture but allows entities to be out-of-
+
+The rest of this study is organized as fol- knowledge base. This study compares the perfor-
+lows: Section 2 discusses the related literature, mance of our models to GENRE, BLINK, and Re-
+and Section 3 introduces the novel massive scale FinED, widely-used models with well-maintained
+WikiConfusables training dataset and historical codebases.
+benchmark. Section 4 develops models for en- The cross-document coreference resolution liter-
+tity coreference and disambiguation, and Section ature is less dense, but a closely related study is Hsu
+5 evaluates model performance. Section 6 applies and Horwood (2022), which uses a contrastively
+our models to a massive-scale historical news cor- trained RoBERTa (Liu et al., 2019) bi-encoder and
+pus. Finally, Section 8 considers limitations, and clustering for cross-document resolution of entities
+Section 9 discusses ethical considerations. and events. They do not consider disambiguation
+
+to an external knowledge base.
+2 Literature A key distinction between this study and most
+
+existing entity disambiguation benchmarks is its
+Entity disambiguation has inspired a variety of ar- focus on real-world contexts with lesser known en-
+chitectures, including a masked language model tities - many lost to history except in the contexts of
+(LUKE) (Yamada et al., 2022) and a neural transla- the documents being considered. Most benchmarks
+tion model (GENRE) (De Cao et al., 2020). While only contain in-knowledge base entities. An excep-
+these architectures work well for some problems, tion is Kassner et al. (2022). They detect out-of-
+they are not well-suited for disambiguation of large- knowledge base mentions by clustering representa-
+scale historical corpora. The masked language tions, with a cluster defined as out-of-knowledge
+model approach limits to the top 50K Wikipedia base if there are no Wikipedia embeddings in the
+entries, many of whom are not people, due to com- cluster. They then add the mean embeddings of
+putational constraints in computing the softmax. It the out-of-knowledge base clusters to the knowl-
+also does not allow out-of-knowledge base entities edge base index and run entity linking with this
+and requires sparse entity priors. The neural transla- fully comprehensive embedding index. They use
+tion approach’s sequence-to-sequence architecture BLINK as the encoder. To create a dataset with
+is slow at inference time, requiring around 60 times out-of-knowledge base entities, they link a large
+longer to run than other models considered in our crawl corpus (OSCAR) to two Wikipedia dumps
+comparisons. taken at time t0 and t1. Links to pages added be-
+
+This paper follows the most scalable entity dis- tween t0 and t1 are then out of knowledge base
+ambiguation approaches in employing a bi-encoder when disambiguating to the knowledge base in t0.
+architecture. One of the inspirations for the current This type of out-of-knowledge base entity is dif-
+study is BLINK (Wu et al., 2019), which models ferent to the type we encounter in historical texts,
+entity disambiguation as a text retrieval problem, as they are entities that were prominent enough at
+using a contrastively trained BERT (Devlin et al., the time of mention to link to Wikipedia but are
+
+6176
+
+
+
+not in an earlier snapshot. In contrast, in historical President Kennedy, John Fitzgerald Kennedy, J.
+applications, many individuals are simply not very F. Kennedy, JFK, John Kennedy, John Fitzgerald
+prominent. We do not compare on this benchmark, ‘Jack’ Kennedy, and JF Kennedy. Has worked as
+as all these entities were in the late-2022 Wikipedia a politician, journalist, and statesperson." We then
+snapshot we used for training. Hence, they were append this text with the first paragraph of the as-
+seen in training by our models (but not by some of sociated Wikipedia page.
+the older comparisons) and no longer approximate Easy negatives are created by linking contexts
+truly out-of-knowledge base entities. We do not with random entity templates. Similar to our
+compare on the dataset introduced by Zaporojets coreference training, we use Wikipedia disam-
+et al. (2022) for similar reasons. biguation pages to associate entity contexts with
+
+hard negative templates. We also create negative
+3 Datasets pairs using family relationships in Wikidata - e.g.,
+3.1 Training Data John F. Kennedy and Jacqueline Kennedy Onas-
+
+sis (who could often be referred to as "Mrs. John
+High-quality hard negatives, as well as paired posi- Kennedy"). We split the entities into an 80-10-10
+tive data, are needed to train contrastive models train-validation-test split.
+for entity coreference and disambiguation. We
+create a novel, massive-scale training dataset - Finally, we further adapt the training domain
+
+to newspapers. An advantage of our bi-encoder
+WikiConfusables - by mining entity pairs from
+
+architecture is that it is straightforward to tune to
+Wikipedia disambiguation pages and Wikidata fam- specific domains, plausibly helpful given historical
+ily relationships. document collections can be quite idiosyncratic.
+
+Entity contexts are drawn from a Wikipedia
+We prepare a hand-labeled dataset,
+
+XML dump1 from November 11, 2022, with men-
+NewsConfusables, to tune our LinkWikipedia
+
+tions of each entity appearing as a hyperlink to
+model to the historical news domain. First, we
+
+their page. We split the entities into train, test, and
+obtain names and aliases of individuals from
+
+validation sets, pairing mentions of the same entity
+Wikidata, then do a sparse search for them in a
+
+along with their context (defined by the paragraph
+newspaper corpus spanning a century. We hand
+
+containing the entity mention) to create positive
+label whether the article refers to the anchor (e.g.,
+
+pairs. We create ‘easy negatives’ by pairing an
+John F. Kennedy) or someone with the same name
+
+entity mention with that of a different entity. We
+or alias (e.g., City Councilman Jack Kennedy).
+
+obtain ‘hard’ negatives using Wikipedia’s disam-
+When they refer to different individuals, these form
+
+biguation pages, e.g., John Fitzgerald Kennedy and
+hard negatives. We create extra hard negatives by
+
+John Kennedy (Louisiana senator). We further en-
+matching an individual with another individual
+
+hance our training data with in-context negatives,
+mentioned in the same context, and Wikipedia hard
+
+other entities that appear in the context window of
+negatives by matching an individual with another
+
+the entity under consideration. Table 1 describes
+individual mentioned in the same Wikipedia
+
+the resulting dataset.
+disambiguation dictionary. Easy negatives are
+
+Train Val Test created by matching with a random individual.
+Wiki Coreference 179,069,981 5,819,525 5,132,56 Further information on this labeling process is
+Wiki Disambiguation 4,202,145 522,385 528,709 given in the supplementary materials.
+NewsConfusables 5046 666 666
+
+Table 1: Statistics on dataset size. 3.2 Evaluation Data
+An important contribution of the study is to create
+
+We also create data for disambiguation by link- high quality evaluation data for entity coreference
+ing contexts with entity mentions to their associated resolution and disambiguation with historical docu-
+template, forming positive pairs. To create the tem- ments. Our Entities of the Union benchmark
+plate, we use Wikidata names, aliases, and occupa- labels historical, off-copyright U.S. newswire ar-
+tions/positions held by individuals. For example, ticles (Silcock et al., 2024). We double label 157
+for President Kennedy: "John F. Kennedy is of type newswire articles, from 4 different days from 4
+human. Also known as Kennedy, Jack Kennedy, years in the 1950s and 60s, totaling 1,137 person
+
+1https://dumps.wikimedia.org/ mentions. The articles were labeled by highly moti-
+6177
+
+
+
+vated North American undergraduate students2 and propagate. Separating named entity recognition
+all discrepancies were resolved by hand. We label and coreference/disambiguation simplifies the ar-
+days on which State of the Union addresses took chitecture, making it easier for the social science
+place, as there are modestly more coreferences to community to implement or customize to individu-
+resolve, providing more power for evaluating this alized applications.
+task. We moreover focus on [PER] (person) tags from
+
+We split Entities of the Union into a 50-50 named entity recognition, as these are of primary
+evaluation-test split, so the coreference clustering interest for many historical applications. We found
+threshold can be chosen on the val split. Table 2 that locations could be disambiguated very well
+compares the size of the Entities of the Union using non-neural methods and Geonames, a larger
+test split to other widely-used modern benchmarks structured database of georeferenced locations.
+for entity disambiguation. Coreference Resolution Model: Our corefer-
+
+ence resolution model links mentions of a given
+Benchmark Total Mentions in People People in
+
+Mentions Wikipedia Mentions Wikipedia person across documents in a corpus. Depending
+AIDA-CoNLL (test) 1,824 1,824 248 248 on the question at hand, coreference resolution can
+ACE2004 257 257 20 20 produce the final output or can be used to create a
+AQAINT 727 727 64 64
+MSNBC 656 656 228 228 prototype entity for disambiguation to an external
+WNED-WIKI 6,821 6,821 625 625 knowledge base.
+WNED-CWEB 11,154 11,154 1,361 1,361
+EotU (test) 569 446 569 446 We choose a bi-encoder infrastructure, as bi-
+
+encoders are relatively straightforward for re-
+Table 2: Entity and people mentions across different searchers with limited exposure to deep learning
+benchmarks. to customize to novel settings. This is essential for
+
+academic applications, which tend to be highly di-
+Note that our full dataset is twice the size of the verse and hence often require customization. They
+
+test set described here. The larger WNED datasets train with relatively little supervised data and fine-
+are generated automatically from web texts - e.g., tuning is not very sensitive to hyperparameter se-
+using links from elsewhere on the web to Wikipedia lection. Training a bi-encoder is feasible on a small
+- and hence are more akin to WikiConfusables. compute budget. Pre-trained bi-encoder models are
+
+Note that these widely used-benchmarks have lightweight and offer efficient inference for large
+all entities in the knowledge base. In Entities datasets. Other popular architectures often have
+of the Union (validation and test splits), there limitations on the size of the knowledge base that
+are 220 unique individuals that are in Wikipedia, can be used, cannot handle out-of-knowledge base
+totaling 898 mentions. There are 239 mentions that entities, or are very slow to run. Out-of-knowledge
+are not in Wikipedia. base entities and a large set of potential entities to
+4 Methods disambiguate to are particularly common in histori-
+
+cal applications. Finally, bi-encoders are easily im-
+LinkMentions and LinkWikipedia coreference plementable using the sentence transformers pack-
+mentions across documents in a corpus and dis- age, which continues to have an active user com-
+ambiguate person mentions to a knowledge base, munity. This will hopefully add to the longevity of
+respectively. An overview of the model architec- a bi-encoder approach to disambiguation.
+ture is shown in Figure 1. To contrastively train LinkMentions, using the
+
+We separate named entity recognition - which 179,069,981 coreference training pairs in our novel
+tags the tokens in a text that refer to named enti- WikiConfusables coreference training set, we em-
+ties - from entity disambiguation, rather than do- ploy Online Contrastive Loss as implemented in
+ing them end-to-end as in entity linking. Even Reimers and Gurevych (2019), with cosine simi-
+in noisy historical news articles, we are able to larity and margin of 0.4, and utilize AdamW as
+achieve 94% accuracy tagging people with named the optimizer with a linear warm up scheduler set
+entity recognition as a token classification task. Er- to 18.2%. Our training setup includes 4 Nvidia
+rors tend to occur when OCR noise is so severe A6000 GPUs, a batch size of 512, and a learning
+that there is little hope of disambiguating the en- rate of 1e-5. We train for a single epoch, processing
+tity. Hence, there is not much scope for errors to each pair in the training split only once. The best
+
+2They were paid at the rate set by our department. model is chosen based on the pair-wise classifica-
+6178
+
+
+
+Figure 1: Entity Disambiguation Pipeline. Newspaper articles with pre-identified entities are embedded using
+LinkMentions and then clustered to group mentions of the same entity. Templates constructed from Wikidata and
+Wikipedia are then embedded using the LinkNewsWikipedia to create a lookup FAISS index. The news articles
+corresponding to the same cluster are embedded using LinkNewsWikipedia and mean-pooled to create a prototype
+embedding to query the lookup index. The entity of the nearest Wikipedia template to the query is assigned to each
+article in the entity cluster.
+
+tion F1 score on the validation set, with the highest LinkMentions is used to embed the mentions, and
+validation F1 being 92.75%. then they are grouped together via hierarchical ag-
+
+We use a sequence length of 256, and initialize glomerative clustering (with average linkage) using
+with an all-mpnet-base-v2 Sentence-BERT model cosine similarity. A threshold of 0.175 was chosen
+(Reimers and Gurevych, 2019) from the Hugging on the validation set. (Other clustering methods
+Face hub. This is a lightweight model, making it are straightforward to swap in, as desired.) In the
+more feasible for those in the academic community newspaper corpus, we coreference entities across
+with limited resources to train and deploy it at scale. articles within dates.
+The model is trained in Pytorch (Paszke et al., 2019) Disambiguation: For disambiguation, we fine-
+with hyperparameters tuned using hyperband im- tune our coreference model on the disambiguation
+plemented in Weights and Biases (Weights&Biases, portion of WikiConfusables, with similar hyper-
+2023). Given the large training dataset, we found it parameters to those used in coreference training,
+beneficial to divide it into 10 chunks before training. but without restarts or chunking. The learning rate
+After completing each chunk (1/10 of an epoch), is 2e-6, with a 20% warm up, and batch size is 256.
+we resumed training from an intermediate check- The model is trained for three epochs, and the best
+point and lowered the learning rate to 2e-6 after checkpoint is selected based on the classification
+the first chunk to minimize the risk of the opti- F1, achieving a maximum validation F1 of 97%.
+mizer overshooting the minima. Since training This model can be further tuned for specific
+each chunk began with a warm up, our approach ef- applications. We create LinkNewsWikipedia
+fectively simulates a linear scheduler with restarts. by tuning on the paired disambiguation data in
+
+We observed significant performance improve- NewsConfusables. We use an identical training
+ment by using special tokens ([M ] Entity [\M ]) setup, achieving a maximum validation F1 of 85%.
+around an entity mention (Wu et al., 2019). For Next, we prepare a lookup corpus to disam-
+instance, "Eisenhower sharing a light moment with biguate entity mentions to the correct entity us-
+President-elect [M ] John F. Kennedy [\M ] during ing semantic information from both the context
+their meeting in the Oval Office." around the mention and information from a tem-
+
+At inference time, the contrastively trained plate we create from Wikipedia and Wikidata pages
+6179
+
+
+
+of individuals, as described above. We prune our training a cross-encoder on WikiConfusables
+knowledge base to remove extraneous entities. We would be straightforward.
+include only entities of instance type human, who For reproducibility and ease of access, we have
+have a birth or death date, as we found most that did made our models and training/evaluation data avail-
+not were instance type errors. We remove pages of able on the Hugging Face hub (links are redacted
+individuals born after the conclusion of the corpus to maintain anonymity for review). All code is in
+and remove entities with no overlap and a high edit our GitHub repository.
+distance between the Wikidata label and the asso-
+ciated Wikipedia page title. We found that those 5 Evaluation
+pages overwhelmingly were not a person page for
+that Wikidata entry. To measure performance on coreferencing and dis-
+
+The resulting knowledge base has 1.12 million ambiguating individuals in historical documents,
+person pages. We embed these templates using our we apply our models and others from the literature
+disambiguation model and store them in a FAISS to Entities of the Union. We made significant
+IndexFlatIP index (Johnson et al., 2019). efforts to run existing models on our evaluation
+
+To run disambiguation, we embed mentions us- data, but not all models in the literature have main-
+ing the disambiguation model. Using the clusters tained their codebases, or even made code available.
+obtained from coreferencing, we mean pool within Moreover, some models are simply not suitable
+each cluster to create the entity prototype embed- for the task. For example, LUKE (Yamada et al.,
+dings, and use these to query the nearest neigh- 2019) limits to top 50K Wikipedia entities (many
+bor(s) in the knowledge base. If there is no em- of whom are not people), meaning relatively few
+bedding in the knowledge base within a threshold entities in our datasets are in the knowledge base.
+cosine similarity of the query - where this threshold We run BLINK (Wu et al., 2019), GENRE (De Cao
+is chosen on a validation set - we mark the entity et al., 2020), and ReFinED (Ayoola et al., 2022), all
+as not in the knowledge base. prominent models in the entity disambiguation liter-
+
+To choose the no-match threshold, we annotate ature with well-maintained codebases. We closely
+the output of our disambiguation pipeline on a set follow their implementations, providing details in
+of 6,425 pairs sampled from 13 years in a large- the supplementary materials. The latter two mod-
+scale newswire dataset (Silcock et al., 2024). We els have a zero-shot version and an AIDA-CoNLL
+then find the cut-off threshold that maximizes pair- fine-tuned version. We report results for both.
+wise classification precision and use it as the no- These are disambiguation, not coreference, mod-
+match threshold. We chose a threshold of 0.14986. els. The coreference literature is thinner and dis-
+
+If the returned matches are very close to each ambiguation is our main focus, and so we do not
+
+other, we find there are modest gains from dis- have comparisons for this task. Coreferencing in-
+
+ambiguating to the most popular near entity. If dividuals across newswire articles is very accurate,
+
+the nearest neighbor is within the no-match thresh- achieving an adjusted rand index (ARI) of 96.42.
+
+old distance for a match, and the second-nearest Table 3 documents that on the Entities of the
+
+neighbor is at least 0.01 cosine distance from the Union dataset, both our zero-shot LinkWikipedia
+nearest neighbor, we disambiguate to the nearest model and fine-tuned LinkNewsWikipedia
+
+neighbor. Otherwise, we use Qrank3, which ranks model beat other models by a wide margin.
+Wikidata entities by aggregating page views on LinkNewsWikipedia correctly retrieves or
+Wikipedia, Wikispecies, Wikibooks, Wikiquote, classifies as out-of-knowledge base 78% of
+and other Wikimedia projects. We keep all entities individual mentions, whereas LinkWikipedia has
+that are within 0.01 cosine distance of the nearest an accuracy of 74%. The next best alternative is
+neighbor to the query, and choose the one with the ReFinED, which correctly disambiguates around
+highest Qrank. 65% of mentions. When only considering entities
+
+We do not add a re-ranking step with a cross- in Wikipedia, LinkNewsWikipedia correctly
+
+encoder, as in Wu et al. (2019), in order to maxi- disambiguates 89% of entities, LinkWikipedia
+
+mize scaleability to massive datasets. However, correctly disambiguates 85% of entities, and the
+next best alternative is GENRE, with an accuracy
+
+3https://github.com/brawer/wikidata-qrank/ of 81%. Hence, while much of the advantage is
+tree/main with out-of-knowledge base entities, our models
+
+6180
+
+
+
+Benchmark LinkWikipedia LinkNewsWikipedia BLINK GENRE GENRE ReFinED ReFinED
+BLINK Data AIDA-CoNLL Base AIDA-CoNLL
+
+EotU (all) 74.0 78.3 59.9 63.4 62.4 65.4 64.0
+EotU (in KB) 85.2 89.0 76.5 80.9 79.6 60.3 59.9
+AIDA-CoNLL (test set) 70.6 71.7 79.0 58.1 62.1 99.2 99.2
+ACE2004 90.0 90.0 85.0 80.0 80.0 80.0 80.0
+AQAINT 92.2 95.3 98.4 95.3 95.3 93.8 93.8
+MSNBC 89.4 98.2 81.6 82.5 84.2 84.2 82.9
+WNED-WIKI 88.9 88.5 93.9 94.2 93.4 95.5 94.7
+WNED-CWEB 70.7 71.5 69.1 70.7 71.5 73.3 72.4
+
+Table 3: Benchmark performance comparison across different methods. The first row evaluates on all entities in
+Entities of the Union, whereas the second row only considers in-knowledge base entities.
+
+also do better on in-knowledge base entities, even tering entities in the knowledge base to be born
+zero-shot. prior to the end date of the corpus and re-ranking
+
+We also compare performance on disambiguat- by Wikipedia QRank when the nearest entities are
+ing people in existing, widely-used benchmarks. very close to each other. Accuracy falls relative
+While modern data are not our main focus, to the baseline by around ten percentage points
+our models do reasonably well. In particular, in both models. Adding coreference resolution
+LinkNewsWikipedia achieves a near-perfect 98% restores almost all of this decline, with birthdate
+accuracy on MSNBC. LinkWikipedia has 89% filtering and Qrank re-ranking contributing little.
+accuracy, as compared to the next best (GENRE) Coreference resolution plausibly combines infor-
+with 84% accuracy. This suggests that our mod- mation across mentions and reduces noise, leading
+els - beyond being suited to historical applications to overall better quality disambiguation.
+- can also be well-suited to disambiguating mod-
+ern news. We also beat other models on the news 6 Exploring Entities in Historical News
+dataset ACE2004, which has very few people. On
+other modern benchmarks, there are model(s) that To give a flavor of how our framework can be com-
+perform better, but our performance is in the range bined with historical documents, we apply our dis-
+of the other models. ambiguation pipeline to a large-scale corpus of his-
+
+torical newswire articles - sent out over newswires
+Model Base Our Model Add Add Birth Add Qrank such as the Associated Press between 1878 and
+
+MPNet Only Disambig. Coref. Date Filter Rerank 1977 (Silcock et al., 2024). The dataset contains
+LinkWikipedia 26.5 62.6 73.8 73.8 74.0
+NewsLinkWikipedia 26.5 69.1 77.9 77.9 78.3 2.7 million unique articles, reproduced in a corpus
+
+of local news over 32 million times.
+Table 4: Ablations. The first column uses a Sentence-
+BERT MPNet model, which we use to initialize training. We disambiguate 15,323,463 person mentions,
+The second column discards the coreferencing step, as encompassing 61,933 unique individuals. Only
+well as birthdate filtering and Qrank re-ranking. The 4.6% of disambiguated entity mentions refer to
+next three columns add back coreference resolution, women, with Golda Meir being the most mentioned
+birthdate filtering, and Qrank re-ranking, respectively. woman. The most mentioned entity is Dwight
+
+D. Eisenhower, appearing in 9,530 unique articles
+We conduct ablations in Table 4, to quantify the which are reproduced an average of 33.7 times.
+
+contributions of different elements in our disam- Richard Nixon, Harry S. Truman, and Adolf Hitler
+biguation pipeline. Base MPNet disambiguates are the next most mentioned in unique newswire
+with a Sentence-BERT (Reimers and Gurevych, articles. Figure 2 plots their mention counts. For
+2019) MPNet (Song et al., 2020) model (all-mpnet- U.S. presidents, electoral cycles are clearly visible.
+base-v2), the base model that we initialize with. Entity disambiguation also allows us to see in-
+This model is not intended for entity disambigua- dividuals’ occupations in Wikidata. The most
+tion, but we include it to quantify how much is common occupations of disambiguated entities are
+gained through our training. Performance is very politician, military officer and lawyer.
+poor. The next column reports results from our This dataset, also publicly available, provides
+trained disambiguation models, without corefer- fascinating data that researchers can use to study
+ence resolution or additional processing steps: fil- who appeared in historical news and which of these
+
+6181
+
+
+
+ence and disambiguation, while our models provide
+an off-the-shelf solution for social scientists want-
+ing to explore who is mentioned in historical texts.
+
+8 Limitations
+The present paper focuses on individuals and dis-
+ambiguation to Wikipedia/Wikidata. We found dis-
+ambiguating locations to Wikipedia to be unproduc-
+tive, as we could achieve very strong performance
+using sparse methods and Geonames, a more com-
+prehensive database of locations. In the future, we
+hope to extend the model to organizations (though
+
+Figure 2: Mentions over time of entities that appeared in practice, many historical organizations end up
+most commonly in newswire articles. being out-of-knowledge base).
+
+While Wikipedia is extensive, there are many
+people who never entered this knowledge base,
+and various biases may influence which histori-
+cal figures are remembered in Wikipedia. Part of
+the objective of applying LinkNewsWikipedia to
+a massive scale corpus of historical newswires is to
+understand more about which individuals were con-
+sidered broadly newsworthy at the time but have
+since been forgotten. This information could be
+used to expand databases such as Wikipedia in the
+future. Nevertheless, we cannot disambiguate an
+
+Figure 3: Mentions against Wikipedia Qrank. individual who is not in the knowledge base, no
+matter how noteworthy they were historically.
+
+individuals are remembered via Wikipedia today. 9 Ethical Considerations
+To examine whether we are able to detect less
+
+prominent entities as well as prominent entities, This study presents no major ethical concerns. Its
+we plot log mentions by decile in the large scale methods are entirely open source, and its training
+newswire dataset (Silcock et al., 2024) - a measure data are entirely in the public domain. We disam-
+of how prominent individuals were in the news his- biguate individuals in widely reproduced historical
+torically - against log Wikidata Qrank by decile, newspaper articles, which are in the public domain
+showing the correlation between these two mea- and hence do not pose privacy concerns.
+sures. It is possible that some applications could raise
+
+We find a virtually linear relationship, showing concerns. Historical news, government publica-
+that we do not underdetect less prominent entities, tions, and other historical documents reflect the
+or overdetect prominent entities. biases of their time and may contain factual in-
+
+accuracies or offensive content. Moreover, while
+7 Conclusion our models are reasonably accurate, they are not
+We provide new data for training and evaluat- perfect, and depending on the usage of the output,
+ing entity coreference and disambiguation. We human revision of the match - potentially bringing
+propose bi-encoder models trained on this data, in additional information - may be required. It is
+which achieve high accuracy for disambiguating important to interpret the disambiguated texts criti-
+and coreferencing entities in historical documents, cally, as is the norm in rigorous historical research.
+as well as on existing entity disambiguation bench- Acknowledgements
+marks. Our models are able to handle out-of-
+knowledge base individuals. We received excellent research assistance from
+
+Our data provide high-quality resources for other Arpit Bhate, Vania Cheung, William Cox, Den-
+researchers developing methods for entity corefer- nis Du, Eyad Elsafoury, Connor Fogal, Jude Ha,
+
+6182
+
+
+
+Zachary Lee, Alice Liu, Catherine Liu, Shiloh Liu,
+Andrew Lu, Omer Mujawar, Sethu Odayappan,
+Domenick Regina, Cristopher Rosas, and Ryan
+Xia. Harvard Data Science Initiative and Microsoft
+Azure provided compute credits to support article
+digitization.
+
+6183
+
+
+
+Supplemental Materials
+10 Model hyperparameters
+
+10.1 Entity coreference
+At training time, we split the large training set into
+10 chunks and we use the following hyperparame-
+ters:
+
+• Online contrastive loss, with cosine distance
+metric and a margin of 0.4 Figure 4: Sensitivity of disambiguation results to choice
+
+of coreference clustering threshold.
+• Batch size: 256
+
+• Max sequence length: 256
+
+• Epochs: 1
+
+• Learning rate 1e-5, increased to 2e-06 after
+first chunk
+
+• Optimiser: AdamW
+
+• Warm-up rate: 0.182, increased to 1 after the Figure 5: Sensitivity of disambiguation results to choice
+first chunk of no-match threshold.
+
+At inference time, we cluster entities using Hi- 10.3 Sensitivity to inference hyperparameters
+erarchical Agglomerative clustering, with average
+linking and cosine distance metric, with a thresh- The two main hyperparameters at inference time
+old of 0.175, which was validated on the validation are the clustering threshold used in the coreference
+split. step, and the no-match threshold used in the dis-
+
+ambiguation step. In figure 4 in the main text, we
+10.2 Entity disambiguation demonstrate that our results are not particularly
+
+sensitive to other choices.
+At training time we use the following hyperparam- Here we examine sensitivity of our results
+eters: to choices of clustering threshold and no-match
+
+threshold, with our fine-tuned disambiguation
+• Online contrastive loss, with cosine distance model.
+
+metric and a margin of 0.4 Figure 4 graphs the disambiguation accuracy on
+the test set of Entities of the Union for differ-
+
+• Batch size: 256 ent choices of clustering threshold. The results are
+quite flat around the threshold that we chose, based
+
+• Max sequence length: 256 on the validation set.
+Figure 4 shows sensitivity of these same results
+
+• Epochs: 3 to choice of no-match threshold. The results are not
+especially sensitive. The threshold can be changed
+
+• Learning rate 2e-6 ±2 percentage points with little change to the re-
+sults. In fact, we can see here that the threshold
+
+• Optimiser: AdamW that we chose was not in fact the optimal threshold,
+but this makes minimal difference to our overall
+
+• Warm-up rate: 0.2 results.
+6184
+
+
+
+11 Comparison to other entity detail about the person, including information
+disambiguation models on positions they’ve held, what else they’ve
+
+done etc. Most of these people also appear on
+We compare our method against existing entity Wikipedia, so this is also a good source for
+disambiguation architectures. Results from this are finding out more info about the person.
+given in the text. Details of the implementations of
+other architectures follow. • Then there are (up to) 32 passages of text.
+
+In each of these there is a highlighted term.
+11.1 BLINK Your job is to label each of these passages for
+To run BLINK (Wu et al., 2019), we use the im- whether the highlighted term is the same as
+plementation from their github repository directly the person in the box at the top (‘positive’) or
+(https://github.com/facebookresearch/ not (‘negative’). In some cases this will be
+BLINK). Specifically we use main_dense.run() pretty clear, and in some cases it might need a
+with default hyperparameters. bit of digging.
+
+11.2 GENRE • In some cases we don’t have 32 passages, so
+you’ll see some turn up as "Empty" at the end
+
+For GENRE (De Cao et al., 2020), we - no need to label these ”
+used their huggingface implementation
+(https://huggingface.co/facebook/ 12.2 Entities of the Union annotator
+genre-linking-blink). We used 10 beams, with instructions
+truncation around the entities to a max token To create Entities of the Union, 1,137 entity
+length of 384 as suggested in the appendix of the mentions across 157 newswire articles were double-
+original paper. Otherwise default hyperparameters annotated by undergraduate research assistants. An-
+were used. We evaluate using both their base notator labeling instructions were as follows:
+model (facebook/genre-linking-blink) and “We’ve pulled out lots of articles from the day
+their model finetuned on Aida-YAGO. of the State of the Union speech in 1958, 1959,
+
+1960 and 1961. A team of RAs over this semester
+11.3 ReFinED has been labeling the spans in these texts that re-
+To evaluate ReFinED, we use entity disambigua- fer to an entity. What we want you to focus on is
+tion implementation from their github repos- working out which unique entity these spans refer
+itory (https://github.com/amazon-science/ to. The database of unique identifiers that we will
+ReFinED). We use refined.process_text() work from is Wikidata (https://www.wikidata.org/).
+with default hyperparameters. For each mention, If you search for entities on here, you will see
+we specify that the mention type is PER using they have a unique identifier beginning with Q (eg.
+coarse_mention_type = "PERSON". Melissa’s is Q58009782 ). For each entity in the
+
+articles we’d like you to find the unique identifier in
+12 Annotator instructions wikidata (if it exists). It might also be useful to use
+12.1 wikipedia in difficult cases - all pages on wikipedia
+
+NewsConfusables annotator instructions
+will have an entry in wikidata, but wikidata is big-
+
+NewsConfusables was labeled by The articles ger than wikipedia, so there might be some entities
+were labeled by paid North American undergradu- in wikidata that you don’t find in wikipedia [...]
+ate students. Annotators were given the following there’s 14 entities to label on average per article.
+instructions: The entity in question should be highlighted in the
+
+text.”
+• “The box at the top shows the entity in ques- Annotators were encouraged to reach out with
+
+tion, the years in which they held some kind questions and clarifications.
+of important position, and their aliases (see
+more detail at the end of this email).
+
+References
+• It also shows a code starting with Q. This
+
+is the unique reference for the person in Tom Ayoola, Shubhi Tyagi, Joseph Fisher, Christos
+Christodoulopoulos, and Andrea Pierleoni. 2022. Re-
+
+Wikidata. You can query search this there FinED: An efficient zero-shot-capable approach to
+(https://www.wikidata.org/) and pull up more end-to-end entity linking. In NAACL.
+
+6185
+
+
+
+Nicola De Cao, Gautier Izacard, Sebastian Riedel, and Neural Information Processing Systems, 33:16857–
+Fabio Petroni. 2020. Autoregressive entity retrieval. 16867.
+arXiv preprint arXiv:2010.00904.
+
+Weights&Biases. 2023. Tune hyperparameters.
+Jacob Devlin, Ming-Wei Chang, Kenton Lee, and
+
+Kristina Toutanova. 2018. Bert: Pre-training of deep Ledell Wu, Fabio Petroni, Martin Josifoski, Sebastian
+bidirectional transformers for language understand- Riedel, and Luke Zettlemoyer. 2019. Scalable zero-
+ing. arXiv preprint arXiv:1810.04805. shot entity linking with dense entity retrieval. arXiv
+
+preprint arXiv:1911.03814.
+Kaiming He, Haoqi Fan, Yuxin Wu, Saining Xie, and
+
+Ross Girshick. 2020. Momentum contrast for unsu- Ikuya Yamada, Koki Washio, Hiroyuki Shindo, and Yuji
+pervised visual representation learning. In Proceed- Matsumoto. 2019. Global entity disambiguation with
+ings of the IEEE/CVF conference on computer vision pretrained contextualized embeddings of words and
+and pattern recognition, pages 9729–9738. entities. arXiv preprint arXiv:1909.00426.
+
+Benjamin Hsu and Graham Horwood. 2022. Contrastive Ikuya Yamada, Koki Washio, Hiroyuki Shindo, and
+representation learning for cross-document corefer- Yuji Matsumoto. 2022. Global entity disambiguation
+ence resolution of events and entities. arXiv preprint with bert. In Proceedings of the 2022 Conference
+arXiv:2205.11438. of the North American Chapter of the Association
+
+for Computational Linguistics: Human Language
+Jeff Johnson, Matthijs Douze, and Hervé Jégou. 2019. Technologies, pages 3264–3271.
+
+Billion-scale similarity search with gpus. IEEE
+Transactions on Big Data, 7(3):535–547. Klim Zaporojets, Lucie-Aimée Kaffee, Johannes Deleu,
+
+Thomas Demeester, Chris Develder, and Isabelle Au-
+Vladimir Karpukhin, Barlas Oğuz, Sewon Min, Patrick genstein. 2022. Tempel: Linking dynamically evolv-
+
+Lewis, Ledell Wu, Sergey Edunov, Danqi Chen, and ing and newly emerging entities. In Thirty-sixth Con-
+Wen-tau Yih. 2020. Dense passage retrieval for ference on Neural Information Processing Systems
+open-domain question answering. arXiv preprint Datasets and Benchmarks Track.
+arXiv:2004.04906.
+
+Nora Kassner, Fabio Petroni, Mikhail Plekhanov, Se-
+bastian Riedel, and Nicola Cancedda. 2022. Edin:
+An end-to-end benchmark and pipeline for unknown
+entity discovery and indexing. arXiv preprint
+arXiv:2205.12570.
+
+Yinhan Liu, Myle Ott, Naman Goyal, Jingfei Du, Man-
+dar Joshi, Danqi Chen, Omer Levy, Mike Lewis,
+Luke Zettlemoyer, and Veselin Stoyanov. 2019.
+Roberta: A robustly optimized bert pretraining ap-
+proach. arXiv preprint arXiv:1907.11692.
+
+Adam Paszke, Sam Gross, Francisco Massa, Adam
+Lerer, James Bradbury, Gregory Chanan, Trevor
+Killeen, Zeming Lin, Natalia Gimelshein, Luca
+Antiga, Alban Desmaison, Andreas Kopf, Edward
+Yang, Zachary DeVito, Martin Raison, Alykhan Te-
+jani, Sasank Chilamkurthy, Benoit Steiner, Lu Fang,
+Junjie Bai, and Soumith Chintala. 2019. PyTorch:
+An Imperative Style, High-Performance Deep Learn-
+ing Library. In Advances in Neural Information Pro-
+cessing Systems 32, pages 8024–8035. Curran Asso-
+ciates, Inc.
+
+Nils Reimers and Iryna Gurevych. 2019. Sentence-bert:
+Sentence embeddings using siamese bert-networks.
+arXiv preprint arXiv:1908.10084.
+
+Emily Silcock, Abhishek Arora, Luca D’Amico-Wong,
+and Melissa Dell. 2024. Newswire: A large-scale
+structured database of a century of historical news.
+arXiv preprint arXiv:2406.09490.
+
+Kaitao Song, Xu Tan, Tao Qin, Jianfeng Lu, and Tie-
+Yan Liu. 2020. Mpnet: Masked and permuted pre-
+training for language understanding. Advances in
+
+6186

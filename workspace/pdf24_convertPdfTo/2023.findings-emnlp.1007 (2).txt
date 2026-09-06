@@ -1,0 +1,726 @@
+﻿mReFinED: An Efficient End-to-End Multilingual Entity Linking System
+Peerat Limkonchotiwat1,∗, Weiwei Cheng2, Christos Christodoulopoulos2,
+
+Amir Saffari2, Jens Lehmann2
+
+1School of Information Science and Technology, VISTEC, Thailand
+2Amazon
+
+peerat.l_s19@vistec.ac.th
+{wwcheng, chrchrs, amsafari, jlehmnn}@amazon.com
+
+Abstract models (Devlin et al., 2019). An alternative
+method is predicting the target entity’s Wikipedia
+
+End-to-end multilingual entity linking (MEL)
+is concerned with identifying multilingual en- title in an auto-regressive manner (Cao et al., 2022)
+tity mentions and their corresponding entity by extending the sequence-to-sequence pipeline of
+IDs in a knowledge base. Prior efforts assume Cao et al. (2021). However, none of the existing
+that entity mentions are given and skip the en- works perform end-to-end MEL because of a lack
+tity mention detection step due to a lack of high- of high-quality multilingual entity mention training
+quality multilingual training corpora. To over- resources. For example, we found that Wikipedia
+come this limitation, we propose mReFinED, suffers from an unlabelled entity mention problem,
+the first end-to-end MEL model. Additionally, i.e. not all entity mentions have hyperlink markups
+we propose a bootstrapping mention detection
+framework that enhances the quality of train- to train a reliable mention detection model. Thus,
+ing corpora. Our experimental results demon- devising an end-to-end MEL system remains a
+strated that mReFinED outperformed the best challenging task. In this paper, we propose the first
+existing work in the end-to-end MEL task while end-to-end MEL system. To address the unlabelled
+being 44 times faster. mention problem in end-to-end MEL, we propose a
+
+bootstrapping mention detection (MD) framework.
+1 Introduction Our framework leverages an existing multilingual
+End-to-end entity linking (EL) is the task of identi- MD model to create a bootstrapped dataset, which
+fying entity mentions within a given text and map- we use to train a new mention detection model
+ping them to the corresponding entity in a knowl- for annotating unlabelled mentions in Wikipedia.
+edge base. End-to-end EL plays a crucial role in The framework provides an improvement for
+various NLP tasks, such as question answering (Nie detecting named and non-named entities in
+et al., 2019; Asai et al., 2020; Hu et al., 2022) and Wikipedia, compared to previous multilingual MD
+information retrieval (Zhang et al., 2022). approaches (Honnibal et al., 2020; Hu et al., 2020;
+
+To clarify the terminology used in this paper Tedeschi et al., 2021). To construct the end-to-end
+and previous work, it should be noted that MEL system, we extend ReFinED (Ayoola et al.,
+when referring to EL in previous work, we are 2022) since it is comparable to the state-of-the-art
+specifically referring to entity disambiguation (ED) (SOTA) models in the English end-to-end EL
+where the entity mentions are given. We will only setting, and significantly faster than any other
+refer to our definition of EL (mention detection methods to date. We call this new model mRe-
+with ED) using the full name “end-to-end EL”. FinED. Our code is released at: https:
+Existing EL research has extended models to //github.com/amazon-science/
+support over 100 languages in a single model ReFinED/tree/mrefined.
+using Wikipedia as the training corpus. We call To demonstrate mReFinED’s effectiveness, we
+this task multilingual entity linking (MEL). Recent compare it with SOTA MEL (Cao et al., 2022)
+work proposed MEL frameworks by minimizing on the end-to-end MEL task across two datasets,
+discrepancy between mention and entity descrip- Mewsli-9 (Botha et al., 2020) and TR2016hard (Tsai
+tion representation (Botha et al., 2020) or the same and Roth, 2016). Experimental results show that
+mention but in different contexts (FitzGerald et al., mReFinED outperforms a two-stage model (com-
+2021) based on bi-encoder pre-trained language bining SOTA MD and MEL models) on both
+
+∗ Work conducted during Research Internship at Amazon. datasets. Moreover, mReFinED’s inference speed
+
+15080
+Findings of the Association for Computational Linguistics: EMNLP 2023, pages 15080–15089
+
+December 6-10, 2023 ©2023 Association for Computational Linguistics
+
+
+
+is 44 times faster than SOTA MEL. tuning (using the BIO tagging format; Ramshaw
+Our contributions are as follows: We propose the and Marcus, 1995). When there are possibilities
+
+first end-to-end MEL in a single model by extend- of overlapping entities, we only use the longest
+ing ReFinED to multilingual ReFinED. In addi- entity mention. In addition, we found that using
+tion, we propose a bootstrapping mention detection only 200k sentences per language as training data is
+framework to solve the unlabelled mention prob- enough for formulating the bootstrapped MD (see
+lem in end-to-end MEL. Appendix A.3 for a further details). Finally, we use
+
+the new MD model to annotate unlabelled mentions
+2 Methodology in Wikipedia. The main advantage of using the new
+
+Overview MD model over the XTREME model is its ability
+. We first fine-tune a mention detection
+
+to detect both named and common noun entities.
+(MD) model – based on a multilingual pre-trained
+
+This is because the new MD model learned named
+language model (PLM) – with our bootstrapping
+
+entities from the XTREME model’s annotation and
+MD framework, as shown in Figure 1. We then
+
+common noun entities from existing markups in
+use the bootstrapped MD model to annotate unla-
+
+Wikipedia, which is useful since most entities in
+belled mentions in Wikipedia. Finally, we use the
+
+current MEL datasets are common noun entities.
+data bootstrapped to train mReFinED in a multi-
+
+However, the XTREME model is trained only on
+task manner (Ayoola et al., 2022), which includes
+
+NER datasets and using it on MEL datasets would
+mention detection, entity type prediction, entity
+
+harm performance.
+description, and entity disambiguation.
+
+2.2 Task Definition: end-to-end MEL
+2.1 Bootstrapping Mention Detection
+
+Given a sequence of words in the document
+W = {w1, w2, ..., w|W |}, where the document
+
+2. Bootstrapping mention detection (MD) framework
+Multilingual Existing hyperlinks + new Bootstrapping can be written in multiple languages. We iden-
+
+NER annotations as ground truths MD model   tify entity mentions within the document M =
+Adding new Fine-tuning {m1,m2, ...m|M |} and map each one to the cor-
+annotation MD process responding entity E = {e1, e2, ..., e|E|} in knowl-
+
+Augmented datasets edge base (KB).
+Multilingual Multilingual
+Wikipedia BERT 2.3 Mention Detection
+
+Adding new We use mBERT as our mention encoder to encode
+1. Randomly pick only 200k annotation to
+
+training data
+sentences/language the words wi, with the output from the last layer
+
+Multilingual 3. Using the new MD model
+Wikipedia to add new annotations serving as the contextualized word representations
+
+hi. We add a linear layer to our mention encoder
+Figure 1: The bootstrapping MD framework’s overview. to train token classification (BIO tagging format)
+
+from hi using cross-entropy LMD to the gold label.
+As shown in Figure 1, we employ an ex- Then, we obtain mention representations mi for
+
+isting multilingual named entity recognition each mi by average pooling hi of the entity men-
+(NER) model to annotate unlabelled mentions in tion tokens. All words W are encoded in a single
+Wikipedia corpora. Our framework allows various forward pass, resulting in fast inference.
+choices of existing NER models (Honnibal et al.,
+2020; Hu et al., 2020; Tedeschi et al., 2021) without 2.4 Entity Typing Score
+any constraints. Based on our MD experiments in Previous work in English EL (Raiman and Raiman,
+section 3.3, we adopted the XTREME NER model 2018; Onoe and Durrett, 2020) has shown that us-
+(fine-tuned on 40 languages) since it supports every ing an entity typing model to link entities in a KB
+language in both MEL datasets. can improve the accuracy of the EL task. Thus, we
+
+We then train a bootstrapped multilingual MD train a fine-grained entity typing model to predict
+model using the same PLM as previous MD works entity types t of each mention mi where t is a set
+(mBERT; Devlin et al., 2019) with the newly anno- of entity types t ∈ T from the KB. We add a linear
+tated mentions and existing markups in Wikipedia. layer fθ1 with a sigmoid activation σ to map mi
+For simplicity, we train the bootstrapped MD to a fixed-size vector. We then calculate the entity
+model similarly to BERT’s token classification fine- typing score ET(ej ,mi) using Euclidean distance
+
+15081
+
+
+
+between σ(fθ1) and multi-label entity types T ′: mi and dj with additional temperature scaling
+τ (similarity score calibration; Guo et al., 2017);
+
+ET(ej ,mi) = ||σ(fθ1(mi))− T ′|| (1) and (iii) entity prior score (P̂(e|m)) derived from
+We formulate T ′ by assigning a value of one to Wikipedia hyperlink count statistics and Wikidata
+the correct entity types in T and a value of zero to aliases (Hoffart et al., 2011). These three outputs
+the rest (one entity can have multiple types). We are passed through a linear layer fθ4 with an output
+then minimize the distance between the gold label dimension of one, as shown below:
+(T ′) and ET(·) using cross-entropy LET following EL = fθ4(ET(ej ,mi); sim(mi,dj)/τ ; P̂(ej |mi))
+the distantly-supervised type labels from Onoe and (3)
+Durrett (2020). The output from EL is a score for each ej corre-
+2.5 Entity Description Score sponding to mi. We train the EL score by minimiz-
+
+ing the difference between EL and the gold label
+In this module, we compute the cross-lingual sim- using cross-entropy LEL.
+ilarity score between the mention mi and entity
+description (dj) in the KB. We use English as the 2.7 Multi-task training
+primary language of dj since English is the domi- We train mReFinED in a multi-task manner by
+nant language for mBERT (the language with the combining all losses in a single forward pass.
+highest amount of data), and the model tends to
+perform substantially better compared to other lan- L = λ1LMD + λ2LET + λ3LED + λ4LEL (4)
+guages (Arivazhagan et al., 2019; Limkonchotiwat
+et al., 2022). When English is unavailable we ran- During the training process, we use provide en-
+domly select another language. We use another tity mentions (hyperlink markups), and we simul-
+mBERT to encode entity descriptions dj and train taneously train MD (hyperlink markups and new
+jointly with our mention encoder. We formulate annotations in Section 2.1) along with other tasks.
+dj as [CLS] label [SEP] description [SEP] and
+derive the contextualized representation dj from 3 Experiments
+the [CLS] token in the final layer embedding. We 3.1 Experiment Setting
+incorporate linear layers fθ2 and fθ3 to mention
+and description encoders, respectively, with L2- Setup. We used the Wikipedia data and articles
+normalization at the output of linear layers. from 11 languages with a timestamp of 20221203
+
+Prior works used cosine similarity to derive de- as our training data. To generate candidates, we
+scription score for each entity (Botha et al., 2020; used the top-30 candidates from Ayoola et al.
+FitzGerald et al., 2021; Ayoola et al., 2022). In con- (2022) and concatenated them with the top-30 can-
+trast, we employ NT-Xent (the temperature-scaled didates from Cao et al. (2022). We then select only
+cross-entropy loss) as our training objective since the top 30 candidates with the highest entity prior
+it demonstrated better robustness in ranking results scores for both training and inference steps. For the
+compared to cosine similarity (Chen et al., 2020): full parameter, language, and candidate generation
+
+settings, please refer to Appendix A.1 and A.2.
+
+L esim(fθ (m ,f τ
+2 i) θ (d ))/
+
+3 j Metric. We evaluate mReFinED on the end-to-
+ED = −log∑ sim (2)
+
+d∈D e (fθ (m ) f τ
+2 i , θ (d))/ end EL task in both MEL datasets (Mewsli-9
+
+3
+
+and TR2016hard) using the same metric in pre-
+where D denotes a set of description produced by vious MEL works, which is based on the recall
+candidate generation, τ denotes the temperature score (Botha et al., 2020; FitzGerald et al., 2021;
+parameter, and sim(·) denotes the cosine similarity Cao et al., 2022).
+between two feature vectors.
+
+3.2 End-to-End MEL Results
+2.6 Entity Disambiguation Score Table 1 presents the performance of mReFinED and
+Prior studies demonstrated that using entity descrip- mGENRE on both MEL datasets. The performance
+tion benefits entity disambiguation (Logeswaran of mReFinED is compared with that of a two-
+et al., 2019; Wu et al., 2020). Therefore, we stage model, which involves bootstrapping MD
+concatenate three outputs: (i) entity typing score with mGENRE. Our experiment results on Mewsli-
+(ET); (ii) the cross-lingual similarity score between 9 demonstrated that mReFinED outperforms the
+
+15082
+
+
+
+Model Mewsli-9 TR2016hard
+
+ar de en es fa ja sr ta tr macro micro de es fr it macro
+MD+mGENRE 59.0 67.9 62.1 67.5 54.0 38.3 83.7 34.8 46.4 57.1 63.6 30.5 31.5 23.4 25.5 27.7
+mReFinED 61.8 69.3 64.2 68.0 54.2 43.5 84.5 33.7 49.8 58.8 65.5 28.2 34.4 25.3 25.8 28.4
+w/o entity priors 60.5 62.5 61.3 63.5 54.5 42.8 83.0 33.2 47.2 56.5 61.9 29.1 34.2 25.8 26.0 28.8
+w/o entity types 61.8 69.4 64.2 67.7 54.1 43.1 84.4 33.6 49.8 58.7 65.4 28.0 32.7 24.5 25.5 27.7
+w/o descriptions 61.8 69.9 63.0 67.2 53.2 42.4 84.0 33.5 50.1 58.3 65.0 8.2 17.8 9.6 9.6 11.3
+w/o bootstrapping 0.0 0.1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 3.0 0.0 0.0 0.0 0.0 0.0
+
+Table 1: Recall on Mewsli-9 and TR2016hard datasets. We report both datasets’ results of entity disambiguation and
+entity linking tasks. We use the bootstrapping MD model as mention detection for mGENRE.
+
+two-stage model on the micro- and macro-averages leave further investigations for future work.
+by 1.8 and 1.9 points, respectively. The experi- On TR2016hard, entity descriptions show the
+mental results from TR2016hard also demonstrated most contribution, +17.1 macro average recall
+the same results as Mewsli-9. These results high- when added. Entity types show a small amount
+light the essentials of the end-to-end system in a of contribution, with +0.7 macro average recall.
+single model, which is better than the two-stage Entity priors turn out to be harmful when added
+model. For precision and F1 scores, see table 8 except for es language. Macro average recall is
+in Appendix. The ablations in Table 1 show that, +0.4 when entity priors are removed. This could be
+when the bootstrapping MD framework is removed explained by how mentions in TR2016hard dataset
+and using only the Wikipedia markups, mReFinED are selected. Mentions in TR2016hard dataset are
+produces zero scores for almost all languages in chosen so that the correct entity did not appear
+both datasets. This is because the number of entity as the top-ranked candidate by alias table lookup.
+mentions in the training data decreased from 880 This means entity priors are not very useful for
+million to only 180 million mentions. These results finding the correct entity for these mentions and
+emphasize the importance of our bootstrapping MD model needs to use other information such as en-
+framework, which can effectively mitigate the un- tity descriptions and types to choose the correct
+labelled entity mention problem in Wikipedia. entity. We believe this introduces a discrepancy to
+
+On Mewsli-9, entity priors and descriptions are the training scenario where entity priors are very
+slightly complementary and contribute +0.5 macro useful signal for finding the correct entity given a
+and micro average recall when combined. Entity mention surface form. On the other hand, since the
+types are less useful and contribute +0.1 on macro gap between with and without entity priors is small,
+and micro average recall when added. Combining it also demonstrates mReFinED model’s ability
+all three achieves the best macro and micro average to use appropriate information when entity priors
+recall - 58.8 and 65.5 respectively. alone is not enough to make correct predictions.
+
+For Arabic (ar), removing either entity types 3.3 Multilingual Mention Detection Results
+or descriptions has no difference and achieves the
+same recall (61.8) compared to using all informa- This experiment compares the performance of
+tion. This suggests entity types and descriptions our mention detection models with prior multilin-
+are redundant when either one of them is com- gual MD works, such as spaCy (Honnibal et al.,
+bined with entity priors. Entity priors hurt the 2020), XTREME (Hu et al., 2020), and WikiNEu-
+performance in Farsi/Persian (fa) as removing it Ral (Tedeschi et al., 2021) on both MEL datasets.
+gives +0.3 recall. However, there are only 535 We use the exact match score to evaluate the
+Farsi mentions in the Mewsli-9 dataset, which is efficiency of this study following previous MD
+too small of a sample size to draw reliable conclu- works (Tjong Kim Sang and De Meulder, 2003;
+sions. For German (de) and Turkish (tr), remov- Tsai et al., 2006; Diab et al., 2013). As shown
+ing descriptions seems to be beneficial and yields in Table 9, our bootstrapping MD outperforms
+recall gains of +0.6 and +0.3 respectively. This competitive methods in all languages; e.g., our
+could be a resource-specific issue (there could be bootstrapping MD outperformed XTREME by 9.9
+fewer/lower quality Wikidata descriptions in these points and 7.3 points on Mewsli-9 and TR2016hard
+
+two languages) or a language-related issue (both datasets, respectively. In addition, mReFinED
+languages are morphologically rich) but we will showed superior performance to the bootstrapping
+
+15083
+
+
+
+MD by an average of 2.8 points on Mewsli-9. This presents an opportunity for us to re-annotate
+These results highlight the benefits from additional the MEL datasets in the future using mReFinED as
+join training MD with other tasks in a single model an annotator tool to detect unlabelled mentions.
+outperformed a single task model. We also run an Run-time Efficiency. This study measures
+experiment on XTREME NER dataset to better un- the time per query of mReFinED compared to
+derstand our bootstrapping MD’s performance on mGENRE on one 16 GB V100. Our findings in-
+multilingual mention detection task. We expect our dicate that mGENRE takes 1,280 ms ± 36.1 ms
+bootstrapping MD to achieve comparable results to finish a single query. In contrast, mReFinED
+to competitive multilingual NER models in the lit- requires only 29 ms ± 1.3 ms making it 44 times
+erature when trained on NER data, please refer to faster than mGENRE because mReFinED encodes
+Appendix A.5 for more details. all mentions in a single forward pass.
+
+3.4 Analysis 4 Conclusion
+Incorrect labels in MEL datasets. It is notewor-
+thy that both Mewsli-9 and TR2016 datasets con- In this paper, we propose mReFinED, the first mul-
+tains incorrect labels. In particular, we identified tilingual end-to-end EL. We extend the monolin-
+entities that were erroneously linked to the “Disam- gual ReFinED to multilingual and add the new
+biguation page” instead of their actual pages; e.g., bootstrapping MD framework to mitigate the unla-
+the mention “imagine” in Mewsli-9 was linked to belled mention problem. mReFinED outperformed
+Q225777 – a “Wikimedia disambiguation page”. SOTA MEL in the end-to-end EL task, and the
+Therefore, we removed those incorrect labels in inference speed is faster than SOTA 44 times.
+both datasets and re-evaluated mReFinED and
+mGENRE on the cleaned dataset in Table 2. mRe- Limitations
+FinED’s performance on the cleaned Mewsli-9 We did not compare mReFinED with other MEL
+dataset increases from 65.5 to 67.4 micro-avg, and works (Botha et al., 2020; FitzGerald et al., 2021)
+mGENRE’s performance increases from 63.6 to since they did not release their code. However,
+65.7. Lastly, the number of entity mention in the experimental results from other MEL works in
+Mewsli-9 was decreased from 289,087 to 279,428 the ED task demonstrated lower performance than
+mentions. See Appendix A.4 for TR2016 results. mGENRE. Our experiment report results are based
+
+Cleansed Mewsli-9 on standard MEL datasets, such as Mewsli-9 and
+Method
+
+ar de en es fa ja sr ta tr macro micro TR2016hard, which may not reflect mReFinED’s
+MD+mGENRE 60.3 69.9 64.7 70.0 54.4 39.6 85.4 34.9 47.6 58.5 65.7
+mReFinED 63.0 71.3 66.8 70.1 54.6 44.0 86.3 34.0 50.9 60.1 67.4 performance in real-world applications.
+
+Table 2: Recall score on the cleaned Mewsli-9 dataset.
+References
+
+Unlabelled entity mentions in MEL datasets. It
+is important to note that the unlabelled entity men- Naveen Arivazhagan, Ankur Bapna, Orhan Firat,
+
+Dmitry Lepikhin, Melvin Johnson, Maxim Krikun,
+tion problem also occurs in both MEL datasets. As Mia Xu Chen, Yuan Cao, George Foster, Colin
+mentioned in Section 2.3, most of entities in MEL Cherry, Wolfgang Macherey, Zhifeng Chen, and
+datasets are common noun because these datasets Yonghui Wu. 2019. Massively multilingual neural
+use Wikipedia markups as entity mention ground machine translation in the wild: Findings and chal-
+
+lenges.
+truths. Thus, the MEL datasets also suffer from
+the unlabelled entity mention problem. For exam- Akari Asai, Kazuma Hashimoto, Hannaneh Hajishirzi,
+ple, consider the document en-106602 in Mewsli-9 Richard Socher, and Caiming Xiong. 2020. Learning
+(Figure 3), it was annotated with only eight en- to retrieve reasoning paths over wikipedia graph for
+
+question answering. In International Conference on
+tity mentions, but mReFinED found an additional Learning Representations.
+11 entity mentions in the document, including lo-
+cation (i.e., “Mexico”), person (i.e., “Richard A. Tom Ayoola, Shubhi Tyagi, Joseph Fisher, Christos
+Feely”), organization (i.e., “NOAA”), and com- Christodoulopoulos, and Andrea Pierleoni. 2022. Re-
+mon noun (i.e., “marine algae”) mentions. These FinED: An efficient zero-shot-capable approach to
+
+end-to-end entity linking. In Proceedings of the 2022
+results demonstrate that mReFinED can also miti- Conference of the North American Chapter of the
+gate the unlabelled entity mention in MEL datasets. Association for Computational Linguistics: Human
+
+15084
+
+
+
+Language Technologies: Industry Track, pages 209– Johannes Hoffart, Mohamed Amir Yosef, Ilaria Bordino,
+220, Hybrid: Seattle, Washington + Online. Associa- Hagen Fürstenau, Manfred Pinkal, Marc Spaniol,
+tion for Computational Linguistics. Bilyana Taneva, Stefan Thater, and Gerhard Weikum.
+
+2011. Robust disambiguation of named entities in
+Jan A. Botha, Zifei Shan, and Daniel Gillick. 2020. En- text. In Proceedings of the 2011 Conference on Em-
+
+tity Linking in 100 Languages. In Proceedings of the pirical Methods in Natural Language Processing,
+2020 Conference on Empirical Methods in Natural pages 782–792, Edinburgh, Scotland, UK. Associa-
+Language Processing (EMNLP), pages 7833–7845, tion for Computational Linguistics.
+Online. Association for Computational Linguistics.
+
+Matthew Honnibal, Ines Montani, Sofie Van Lan-
+Nicola De Cao, Gautier Izacard, Sebastian Riedel, and deghem, and Adriane Boyd. 2020. spacy: Industrial-
+
+Fabio Petroni. 2021. Autoregressive entity retrieval. strength natural language processing in python.
+In 9th International Conference on Learning Repre-
+sentations, ICLR 2021, Virtual Event, Austria, May Junjie Hu, Sebastian Ruder, Aditya Siddhant, Gra-
+3-7, 2021. OpenReview.net. ham Neubig, Orhan Firat, and Melvin Johnson.
+
+2020. XTREME: A massively multilingual multi-
+Nicola De Cao, Ledell Wu, Kashyap Popat, Mikel task benchmark for evaluating cross-lingual gener-
+
+Artetxe, Naman Goyal, Mikhail Plekhanov, Luke alisation. In Proceedings of the 37th International
+Zettlemoyer, Nicola Cancedda, Sebastian Riedel, and Conference on Machine Learning, volume 119 of
+Fabio Petroni. 2022. Multilingual autoregressive Proceedings of Machine Learning Research, pages
+entity linking. Trans. Assoc. Comput. Linguistics, 4411–4421. PMLR.
+10:274–290.
+
+Xixin Hu, Xuan Wu, Yiheng Shu, and Yuzhong Qu.
+Ting Chen, Simon Kornblith, Mohammad Norouzi, and 2022. Logical form generation via multi-task learn-
+
+Geoffrey Hinton. 2020. A simple framework for ing for complex question answering over knowledge
+contrastive learning of visual representations. In bases. In Proceedings of the 29th International Con-
+Proceedings of the 37th International Conference ference on Computational Linguistics, pages 1687–
+on Machine Learning, volume 119 of Proceedings 1696, Gyeongju, Republic of Korea. International
+of Machine Learning Research, pages 1597–1607. Committee on Computational Linguistics.
+PMLR. Peerat Limkonchotiwat, Wuttikorn Ponwitayarat, Can
+
+Udomcharoenchaikit, Ekapol Chuangsuwanich, and
+Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Sarana Nutanong. 2022. CL-ReLKT: Cross-lingual
+
+Kristina Toutanova. 2019. BERT: Pre-training of language knowledge transfer for multilingual re-
+deep bidirectional transformers for language under- trieval question answering. In Findings of the Associ-
+standing. In Proceedings of the 2019 Conference of ation for Computational Linguistics: NAACL 2022,
+the North American Chapter of the Association for pages 2141–2155, Seattle, United States. Association
+Computational Linguistics: Human Language Tech- for Computational Linguistics.
+nologies, Volume 1 (Long and Short Papers), pages
+4171–4186, Minneapolis, Minnesota. Association for Lajanugen Logeswaran, Ming-Wei Chang, Kenton Lee,
+Computational Linguistics. Kristina Toutanova, Jacob Devlin, and Honglak Lee.
+
+2019. Zero-shot entity linking by reading entity de-
+Mona T. Diab, Timothy Baldwin, and Marco Ba- scriptions. In Proceedings of the 57th Annual Meet-
+
+roni, editors. 2013. Proceedings of the 7th ing of the Association for Computational Linguistics,
+International Workshop on Semantic Evaluation, pages 3449–3460, Florence, Italy. Association for
+SemEval@NAACL-HLT 2013, Atlanta, Georgia, Computational Linguistics.
+USA, June 14-15, 2013. The Association for Com-
+puter Linguistics. Yixin Nie, Songhe Wang, and Mohit Bansal. 2019.
+
+Revealing the importance of semantic retrieval for
+Nicholas FitzGerald, Dan Bikel, Jan Botha, Daniel machine reading at scale. In Proceedings of the
+
+Gillick, Tom Kwiatkowski, and Andrew McCallum. 2019 Conference on Empirical Methods in Natu-
+2021. MOLEMAN: Mention-only linking of entities ral Language Processing and the 9th International
+with a mention annotation network. In Proceedings Joint Conference on Natural Language Processing
+of the 59th Annual Meeting of the Association for (EMNLP-IJCNLP), pages 2553–2566, Hong Kong,
+Computational Linguistics and the 11th International China. Association for Computational Linguistics.
+Joint Conference on Natural Language Processing
+(Volume 2: Short Papers), pages 278–285, Online. Yasumasa Onoe and Greg Durrett. 2020. Fine-grained
+Association for Computational Linguistics. entity typing for domain independent entity linking.
+
+In The Thirty-Fourth AAAI Conference on Artificial
+Chuan Guo, Geoff Pleiss, Yu Sun, and Kilian Q. Wein- Intelligence, AAAI 2020, The Thirty-Second Innova-
+
+berger. 2017. On calibration of modern neural net- tive Applications of Artificial Intelligence Conference,
+works. In Proceedings of the 34th International Con- IAAI 2020, The Tenth AAAI Symposium on Educa-
+ference on Machine Learning, volume 70 of Pro- tional Advances in Artificial Intelligence, EAAI 2020,
+ceedings of Machine Learning Research, pages 1321– New York, NY, USA, February 7-12, 2020, pages
+1330. PMLR. 8576–8583. AAAI Press.
+
+15085
+
+
+
+Jonathan Raiman and Olivier Raiman. 2018. Deeptype:
+Multilingual entity linking by neural type system
+evolution. In Proceedings of the Thirty-Second AAAI
+Conference on Artificial Intelligence, (AAAI-18), the
+30th innovative Applications of Artificial Intelligence
+(IAAI-18), and the 8th AAAI Symposium on Educa-
+tional Advances in Artificial Intelligence (EAAI-18),
+New Orleans, Louisiana, USA, February 2-7, 2018,
+pages 5406–5413. AAAI Press.
+
+Lance Ramshaw and Mitch Marcus. 1995. Text chunk-
+ing using transformation-based learning. In Third
+Workshop on Very Large Corpora.
+
+Simone Tedeschi, Valentino Maiorca, Niccolò Campol-
+ungo, Francesco Cecconi, and Roberto Navigli. 2021.
+WikiNEuRal: Combined neural and knowledge-
+based silver data creation for multilingual NER. In
+Findings of the Association for Computational Lin-
+guistics: EMNLP 2021, pages 2521–2533, Punta
+Cana, Dominican Republic. Association for Compu-
+tational Linguistics.
+
+Erik F. Tjong Kim Sang and Fien De Meulder.
+2003. Introduction to the CoNLL-2003 shared task:
+Language-independent named entity recognition. In
+Proceedings of the Seventh Conference on Natural
+Language Learning at HLT-NAACL 2003, pages 142–
+147.
+
+Chen-Tse Tsai and Dan Roth. 2016. Cross-lingual wiki-
+fication using multilingual embeddings. In Proceed-
+ings of the 2016 Conference of the North American
+Chapter of the Association for Computational Lin-
+guistics: Human Language Technologies, pages 589–
+598, San Diego, California. Association for Compu-
+tational Linguistics.
+
+Richard Tzong-Han Tsai, Shih-Hung Wu, Wen-Chi
+Chou, Yu-Chun Lin, Ding He, Jieh Hsiang, Ting-
+Yi Sung, and Wen-Lian Hsu. 2006. Various criteria
+in the evaluation of biomedical named entity recogni-
+tion. BMC Bioinform., 7:92.
+
+Ledell Wu, Fabio Petroni, Martin Josifoski, Sebastian
+Riedel, and Luke Zettlemoyer. 2020. Scalable zero-
+shot entity linking with dense entity retrieval. In
+Proceedings of the 2020 Conference on Empirical
+Methods in Natural Language Processing (EMNLP),
+pages 6397–6407, Online. Association for Computa-
+tional Linguistics.
+
+Fuwei Zhang, Zhao Zhang, Xiang Ao, Dehong Gao,
+Fuzhen Zhuang, Yi Wei, and Qing He. 2022. Mind
+the gap: Cross-lingual information retrieval with hier-
+archical knowledge enhancement. In Thirty-Sixth
+AAAI Conference on Artificial Intelligence, AAAI
+2022, Thirty-Fourth Conference on Innovative Ap-
+plications of Artificial Intelligence, IAAI 2022, The
+Twelveth Symposium on Educational Advances in Ar-
+tificial Intelligence, EAAI 2022 Virtual Event, Febru-
+ary 22 - March 1, 2022, pages 4345–4353. AAAI
+Press.
+
+15086
+
+
+
+A Appendix Language Ayoola et al. (2022) Cao et al. (2022) mReFinED
+ar 91.0 95.8 96.6
+
+A.1 Setup de 89.9 93.9 95.7
+en 86.3 95.9 96.7
+
+We trained our model on 11 languages: ar, de, en, es 90.1 89.6 94.4
+fa 90.7 90.1 92.3
+
+es, fa, fr, it, ja, ta, and tr. During training, we seg- ja 90.5 90.1 91.5
+ment the training document into chucks consisting sr 91.4 96.1 97.2
+
+ta 82.4 88.4 92.9
+of 300 tokens each, and limited the mention per tr 88.7 91.4 95.1
+chunk only 30 mentions. We use two layers of macro-avg 89.0 92.4 94.7
+
+mBERT as the description encoder. We train mRe- Table 4: Candidate generation score (recall) on Mewsli-
+FinED for eight days using the AdamW optimizer, 9. We use only top-30 candidates.
+with a learning rate of 5e−4, and a batch size of
+64 for two epochs on 8 A100 (40 GB). For hyper- Language Ayoola et al. (2022) Cao et al. (2022) mReFinED
+parameter settings, we set the hyper-parameters as de 84.9 74.1 85.3
+
+es 83.2 67.0 87.0
+shown in Table 3. In addition, we evaluate the re- fr 81.9 59.6 83.0
+call score of the development set in every 2,000 it 79.6 76.7 84.6
+
+steps to save the best model. macro-avg 83.7 69.4 85.0
+
+Table 5: Candidate generation score (recall) on
+Hyper-parameter Value TR2016hard. We use only top-30 candidates.
+
+λ1 0.01
+λ2 1
+λ3 0.01 found that increasing the number of training data
+λ4 1 more than 200k samples does not increase the per-
+τ 0.02 formance of MD significantly.
+
+Table 3: Hyper-parameters of mReFinED.
+61.00
+
+A.2 Candidate Generation (CG) Results 60.75
+In this experiment, we demonstrated the recall 60.50
+score of various candidate generation methods on
+both MEL datasets and why we need to combine 60.25
+two CG. We adopt ReFinED’s CG from monolin-
+gual to multilingual PEM tables using multilin- 0.01 0.02 0.10 0.20 0.50 1.00
+
+#Training Data 1e6
+gual Wikipedia data and articles. As shown in
+Table 4, mGENRE’s CG outperformed ReFinED’s Figure 2: Effect of training size in the bootstrapping
+CG by 3.4 points on the average case. This is MD framework.
+because mGENRE’s CG was formulated from
+Wikipedia in 2019, while ReFinED’s CG was for-
+mulated in 2022, and there are many rare candi- A.4 Incorrect Labels TR2016 Results
+dates that are not found in ReFinED’s CG but ap- This study demonstrates the performance of
+pear in mGENRE’s CG. On the other hand, Table 5 mGENRE and mReFinED on the cleaned
+demonstrates that ReFinED’s CG outperformed TR2016hard dataset. As shown in Table 6, we ob-
+mGENRE’s CG on the TR2016hard dataset. Thus, serve a 1.5 points improvements from the original
+combining two CGs outperforms using only one result 1 (28.4). Lastly, the number of entity men-
+CG on both MEL datasets. tions was decreased from 16,357 to 15,380.
+
+A.3 Bootstrapping MD Results A.5 XTREME MD Results
+In this study, we demonstrated the effect of train- To evaluate the performance of mention detection
+ing size on bootstrapping MD framework. For the in mReFinED, we run an experiment on XTREME
+training data sizes, we set the size as follows: 10k, NER dataset by converting the labels to mention
+20k, 100k, 200k, 500k, 1M. As shown in Figure 2, detection task with BIO tags. We chose a subset
+the training data has affected the performance of of 8 languages from XTREME NER dataset as
+the bootstrapping MD framework. However, we our Bootstrapping MD is trained on 9 languages in
+
+15087
+
+Exact match score
+
+
+
+Cleansed TR2016hard
+
+Language MD+mGENRE mReFiNED
+de 31.0 29.1
+es 33.1 36.8
+fr 26.6 26.7
+it 26.3 27.1
+
+macro-avg 29.3 29.9
+
+Table 6: Recall score on the cleansed TR2016hard
+
+dataset (removed entities that linked to disambiguation
+pages).
+
+Mewsli-9 dataset. Language sr is dropped here be-
+cause it’s not available in XTREME NER dataset.
+Results of F1 scores are shown in table 7. Please
+note that F1 scores of Hu et al. (2020) are for NER
+task with three entity types - LOC, PER and ORG.
+The fine-tuned models used to produce results in
+their paper are not released so we couldn’t pro-
+duce the results for mention detection task. But
+we want to include their NER results here to better
+understand our Bootstrapping MD’s performance
+on multilingual mention detection task and we ex-
+pect to achieve comparable results to competitive
+multilingual NER models in the literature if trained
+on NER data.
+
+Model XTREME
+ar de en es fa ja ta tr macro
+
+Hu et al. (2020) 53.0 78.8 85.2 79.6 61.9 31.2 59.5 76.1 65.7
+Bootstrapping MD 69.2 74.6 73.6 78.0 71.8 44.5 72.9 81.4 70.7
+
+Table 7: F1 score of mention detection on XTREME
+NER dataset.
+
+A.6 GenBench Evaluation Card
+Motivation
+
+Practical Cognitive Intrinsic Fairness
+□
+
+Generalisation type
+Compo- oss Cross Cross Robust-
+sitional Structural Cr
+
+Task Language Domain ness
+□ □
+
+Shift type
+Covariate Label Full Assumed
+
+□
+Shift source
+
+Naturally Partitioned Generated shift Fully
+occuring natural generated
+
+□ □
+Shift locus
+
+Train–test Finetune Pretrain–train Pretrain–test
+train–test
+
+□
+
+15088
+
+
+
+Model Mewsli-9 TR2016hard
+
+ar de en es fa ja sr ta tr macro micro de es fr it macro
+MD+mGENRE Precision 11.3 18.7 15.9 17.7 12.4 20.8 12.9 5.7 14.8 14.5 16.2 1.4 1.2 1.1 1.3 1.2
+MD+mGENRE Recall 59.0 67.9 62.1 67.5 54.0 38.3 83.7 34.8 46.4 57.1 63.6 30.5 31.5 23.4 25.5 27.7
+MD+mGENRE F1 19.0 29.4 25.4 28.1 20.2 27.0 22.3 9.8 22.5 22.6 25.8 2.7 2.3 2.0 2.5 2.4
+mReFinED Precision 14.9 21.1 18.8 21.0 15.5 28.4 17.0 9.7 21.0 18.6 19.7 1.6 1.7 1.5 1.7 1.6
+mReFinED Recall 61.8 69.3 64.2 68.0 54.2 43.5 84.5 33.7 49.8 58.8 65.5 28.2 34.4 25.3 25.8 28.4
+mReFinED F1 24.0 32.3 29.0 32.1 24.1 34.3 28.3 15.0 29.6 27.6 30.3 3.1 3.2 2.9 3.2 3.1
+
+Table 8: Precision, Recall and F1 scores on Mewsli-9 and TR2016hard datasets. We report both datasets’ results
+of entity disambiguation and entity linking tasks. We use the bootstrapping MD model as mention detection for
+mGENRE. The low precision and F1 scores are due to unlabelled entity mentions in MEL datasets as discussed in
+Section 3.4
+
+Model Mewsli-9 TR2016
+ar de en es fa ja sr ta tr macro de es fr it macro
+
+SpaCy - 50.6 56.0 59.3 - - 21.3 4.1 32.7 - 42.0 53.4 42.1 44.3 45.5
+XTREME 49.8 71.7 63.4 70.6 40.6 12.6 80.3 24.4 46.4 51.1 43.3 51.0 40.9 46.9 45.5
+WikiNEuRal 52.0 72.2 68.9 75.1 - - - - - - 37.6 56.3 42.4 46.6 45.7
+Bootstrapping 60.7 72.2 69.5 73.9 55.5 43.6 87.3 36.6 49.9 61.0 53.3 58.4 48.0 51.3 52.8
+mReFinED 63.5 75.5 71.7 75.8 57.2 47.7 89.4 36.4 56.7 63.8 51.7 59.0 47.6 50.4 52.4
+
+Table 9: Exact match score of mention detection on on Mewsli-9 and TR2016hard datasets. We omitted unsupported
+languages for each model with “-”.
+
+Ground truth mReFinED's prediction
+NOAA says Earth's oceans becoming more acidic
+
+According to a study performed by the National Oceanic and Atmospheric Administration's (NOAA)
+Pacific Marine Environmental Laboratory, the level of acid in the world's oceans is rising, decades
+before scientists expected the levels to rise.
+
+The study was performed on the coastal waters of the Pacific Ocean from Baja California, Mexico to
+Vancouver, British Columbia, where tests showed that acid levels in some areas near the edge of the
+Continental Shelf were high enough to corrode the shells of some sea creatures as well as some
+corals. Some areas showed excessive levels of acid less than four miles off the northern California
+coastline in the United States.
+
+"What we found ... was truly astonishing. This means ocean acidification may be seriously impacting
+marine life on the continental shelf right now. The models suggested they wouldn't be corrosive at the
+surface until sometime during the second half of this century," said Richard A. Feely, an
+oceanographer from the NOAA.
+
+The natural processes of the seas and oceans constantly clean the Earth's air, absorbing 1/3 to 1/2 of
+the carbon dioxide generated by humans. As the oceans absorb more of the gas, the water becomes
+more acidic, reducing the amount of carbonate which shellfish such as clams and oysters use to form
+their shells, and increasing the levels of carbonic acid. Although levels are high, they are not yet high
+enough to threaten humans directly.
+
+"Scientists have also seen a reduced ability of marine algae and free-floating plants and animals to
+produce protective carbonate shells," added Feely.
+
+Feely noted that, according to the study, the oceans and seas have absorbed more than 525 billion
+tons of carbon dioxide since the Industrial Revolution began.
+
+Figure 3: The unlabelled entity mention samples from Section 3.4
+
+15089

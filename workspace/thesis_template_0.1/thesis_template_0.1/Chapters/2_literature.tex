@@ -1,0 +1,16 @@
+\chapter{Literature Review}
+\label{ch:literature}
+
+\section{Monolingual Entity Linking}
+BLINK formalizes dense retrieval for entity linking using a bi-encoder to retrieve candidates and a cross-encoder for re-ranking \cite{wu2020blink}. This design is efficient but compresses entity information into a single vector, which can under-represent fine-grained cues.
+
+MVD addresses this limitation by introducing multi-view representations for entities. It distills a cross-encoder teacher into a dual-encoder student using cross-alignment and self-alignment losses, improving recall on standard benchmarks \cite{mvd2023}. MVD illustrates that increasing view granularity mitigates representation collapse and improves retrieval accuracy.
+
+\section{Multilingual Entity Linking}
+mReFinED extends ReFinED to multilingual, end-to-end EL with a bootstrapped mention detection framework to compensate for missing hyperlinks in Wikipedia \cite{mrefined2023}. It combines candidate generation, entity typing, and description matching. The paper reports strong performance on MEWSLI-9 and TR2016 hard benchmarks, but practical reproduction requires careful handling of multilingual assets and evaluation datasets.
+
+\section{Historical Entity Linking}
+Historical texts involve OCR noise, temporal language drift, and missing KB entries. Contrastive approaches for historical coreference and disambiguation show that modern entity linking systems underperform in such settings \cite{arora2024}. This motivates methods that can handle NIL prediction and leverage large language models for reasoning beyond standard dense retrieval.
+
+\section{LLM-Assisted Unsupervised Linking}
+MHEL-LLaMo proposes an unsupervised ensemble: a multilingual bi-encoder (BELA) performs candidate retrieval and assigns confidence scores; an instruction-tuned LLM handles hard cases and NIL prediction via prompt chaining \cite{mhelllamo2026}. The approach reduces LLM calls, improves robustness on low-resource languages, and maintains efficiency compared to full LLM-based linking.

@@ -1,0 +1,8 @@
+{
+  "status": "failed",
+  "reason": "stopped_no_success",
+  "pid": "808505",
+  "log": "/DATA/kmpooja/mrefined_option1/logs/tr2016_full_20260421_032224.log",
+  "restarts": 6,
+  "updated_at": "2026-04-21 03:32:25"
+}

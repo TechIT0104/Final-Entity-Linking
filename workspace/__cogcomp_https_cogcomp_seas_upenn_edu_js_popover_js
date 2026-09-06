@@ -1,0 +1,29 @@
+customDirectives = angular.module('hoverStuff', []);
+customDirectives.directive('customPopover', function () {
+    return {
+        restrict: 'A',
+        template: '<span>{{label}}</span>',
+        link: function (scope, el, attrs) {
+            scope.label = attrs.popoverLabel;
+            $(el).popover({
+                trigger: 'hover',
+                html: true,
+                content: attrs.popoverHtml,
+                placement: attrs.popoverPlacement
+            });
+        }
+    };
+});
+
+customDirectives.directive('ngTooltip', function () { 
+    return{
+        restrict: 'A',
+        template: '<input tooltip tooltip-placement="top" tooltip-trigger="focus">',
+        replace: true,
+        link: function (scope, element, attrs) {
+          attrs.$set('tooltip', attrs['placeholder']);
+        }
+    }
+});
+
+angular.module('CustomComponents', ['customDirectives']);

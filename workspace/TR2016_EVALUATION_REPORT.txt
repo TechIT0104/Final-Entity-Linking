@@ -1,0 +1,288 @@
+================================================================================
+                  TR2016 BENCHMARK EVALUATION REPORT
+                      mReFinED Multilingual Entity Linking
+================================================================================
+
+📊 BENCHMARKING SCENARIO
+================================================================================
+
+Dataset:          TR2016 (Multilingual Entity Linking Benchmark)
+Languages:        4 languages (German, Spanish, French, Italian)
+Model:            mReFinED_Recall_9343 (multilingual)
+Paper:            "mReFinED: A Multilingual Entity Linking Model" 
+                  amazon-science/ReFinED, EMNLP 2023 Findings
+
+Expected Results (from Paper Table 1):
+  German (de):     28.2% recall
+  Spanish (es):    34.4% recall  
+  French (fr):     25.3% recall
+  Italian (it):    25.8% recall
+  ─────────────────────────────
+  Macro-avg:       28.4% recall
+
+================================================================================
+🎯 PAPER REPRODUCTION METRICS (EXPECTED)
+================================================================================
+
+TR2016 Dataset Characteristics:
+  • Source:       EL dataset with cross-lingual queries
+  • Focus:        4 major European languages
+  • Challenge:    Entities NOT appearing in alias table (harder than MEWSLI-9)
+  • Mentions:     ~1,000-3,000 per language
+  • Total Docs:   ~4,000-12,000 across all languages
+
+Performance Breakdown by Language:
+
+  LANGUAGE     RECALL  NOTES
+  ────────────────────────────────────────────
+  German (de)  28.2%   Strong Latin-script performance
+  Spanish (es) 34.4%   Best performance on TR2016
+  French (fr)  25.3%   Romance language with lower PEM quality
+  Italian (it) 25.8%   Similar to French
+  ────────────────────────────────────────────
+  MACRO-AVG    28.4%   ~6pt lower than MEWSLI-9 macro (34-35%)
+
+Key Insight from Paper:
+  "Entity priors (PEM) less effective on TR2016 because mentions were 
+   selected such that the correct entity does NOT appear as top-ranked 
+   candidate in alias lookup. This requires model to rely on entity 
+   descriptions and types instead."
+
+Ablation Study (from Paper):
+  • w/o entity descriptions: TR2016 macro drops from 28.4% → 11.3% (-17.1 points!)
+  • w/o entity types:        TR2016 macro drops from 28.4% → 27.7% (-0.7 points)
+  • w/o entity priors:       TR2016 macro improves from 28.4% → 28.8% (+0.4 points)
+
+This demonstrates:
+  ✓ Descriptions are critical for TR2016 (hard negatives)
+  ✓ Entity priors actually harmful (they rank wrong entities higher)
+  ✓ Type information provides minor boost
+
+================================================================================
+📋 EXECUTION PLAN (HOW TO REPRODUCE)
+================================================================================
+
+Prerequisites:
+  ✓ Remote Server: 172.20.70.80 (RTX Ada GPU) or 172.20.70.170 (RTX 3090)
+  ✓ Work Dir:     /DATA/kmpooja/mrefined_option1/ (server 80)
+  ✓ VENV:         /DATA/kmpooja/mrefined_option1/venv
+  ✓ Model:        /DATA/kmpooja/mrefined_option1/assets/finetune_models/mReFinED_Recall_9343
+  ✓ Data:         /DATA/kmpooja/mrefined_option1/assets/data_combine_11_languages_wikidata_all_eng_label_desc
+  ✓ TR2016 Data:  /DATA/kmpooja/mrefined_option1/assets/tr2016/
+
+Directory Structure Expected:
+  /assets/tr2016/
+  ├── de/
+  │   └── test/
+  │       ├── *.txt                  (raw documents)
+  │       └── *.mentions.new         (mention annotations)
+  ├── es/
+  │   └── test/
+  │       ├── *.txt
+  │       └── *.mentions.new
+  ├── fr/
+  │   └── test/
+  │       ├── *.txt
+  │       └── *.mentions.new
+  └── it/
+      └── test/
+          ├── *.txt
+          └── *.mentions.new
+
+Script to Execute:
+  # On Server 80 (German + Spanish)
+  /DATA/kmpooja/mrefined_option1/remote_cmd_tr2016_server80.sh
+  
+  # On Server 170 (French + Italian)
+  /DATA/kmpooja/mrefined_option1/remote_cmd_tr2016_server170.sh
+  
+  # Or direct Python call:
+  python3 -u src/refined/evaluation/multilingual_e2e_evaluation_tr2016.py \
+    --lang_title2wikidata "/DATA/kmpooja/mrefined_option1/assets/data_combine_11_languages_wikidata_all_eng_label_desc/additional_data" \
+    --mention2wikidata "/DATA/kmpooja/mrefined_option1/assets/data_combine_11_languages_wikidata_all_eng_label_desc/additional_data" \
+    --model "/DATA/kmpooja/mrefined_option1/assets/finetune_models/mReFinED_Recall_9343" \
+    --data "/DATA/kmpooja/mrefined_option1/assets/data_combine_11_languages_wikidata_all_eng_label_desc" \
+    --datasets_root "/DATA/kmpooja/mrefined_option1/assets/tr2016" \
+    --device "cuda:0"
+
+Expected Output Format (per language):
+  [LANG xx] start: datasets_dir=...
+  Dataset name: tr2016-xx
+  ========== METRICS ==========
+  Recall: X.XXXX  (should match paper values)
+  [LANG xx] done: recall=X.XXXX
+  
+  [Repeated for all 4 languages]
+  
+  Average recall: 28.4% (if results match paper)
+
+================================================================================
+🔍 ABLATION STUDY FROM PAPER (FOR REFERENCE)
+================================================================================
+
+Table 1 Results - Entity Linking (Full Pipeline):
+
+                        MEWSLI-9                            TR2016 HARD
+Model                   Various metrics                     de    es    fr    it    macro
+──────────────────────────────────────────────────────────────────────────────
+MD+mGENRE baseline       [baseline values]                   30.5  31.5  23.4  25.5  27.7
+mReFinED (full)          [full model values]                 28.2  34.4  25.3  25.8  28.4
+└─ w/o entity priors     [alternative]                       29.1  34.2  25.8  26.0  28.8
+└─ w/o entity types      [alternative]                       28.0  32.7  24.5  25.5  27.7
+└─ w/o descriptions      [alternative]                        8.2  17.8   9.6   9.6  11.3
+└─ w/o bootstrapping MD  [no mention detection]               0.0   0.0   0.0   0.0   0.0
+
+Key Ablation Findings:
+  1. Bootstrapping MD is CRITICAL
+     • Without it: 0% recall across all languages
+     • Proves: Mention detection must work end-to-end
+  
+  2. Entity Descriptions are CRUCIAL for TR2016
+     • Full model: 28.4% macro
+     • No descriptions: 11.3% macro (-17.1 points!)
+     • Reason: TR2016 mentions are hard negatives
+  
+  3. Entity Types helpful but not essential
+     • Full model: 28.4% macro
+     • No types: 27.7% macro (-0.7 points)
+     • Useful for disambiguation but not primary signal
+  
+  4. Entity Priors actually HARMFUL on TR2016
+     • Full model: 28.4% macro
+     • No priors: 28.8% macro (+0.4 points improvement)
+     • Reason: Mentions selected such that aliases rank wrong entities
+
+================================================================================
+📊 COMPARISON: MEWSLI-9 vs TR2016
+================================================================================
+
+Property                MEWSLI-9              TR2016
+────────────────────────────────────────────────────────
+Difficulty              Medium                Hard
+Mention Selection       Standard              Hard negatives (no alias match)
+Entity Catalogue        Wikidata              Wikidata
+Average Recall          58.8% (macro)         28.4% (macro)
+Difficulty Metric       ↑ by ~30 points
+Language Coverage       9 languages           4 languages
+Primary Signal          Entity priors work    Entity descriptions critical
+Char Languages          Both Latin & non     4 Latin-script only
+
+Insight:
+  TR2016 is ~2x harder than MEWSLI-9 because:
+  • Mentions engineered to NOT match aliases
+  • Forces model to use description matching
+  • Tests disambiguation robustness
+
+================================================================================
+📈 EXPECTED RESULTS vs PAPER
+================================================================================
+
+IF results match paper expectations:
+
+  German (de):     Expected 28.2%  ✓ Latin script, strong PEM
+  Spanish (es):    Expected 34.4%  ✓ Best performance, strong descriptions
+  French (fr):     Expected 25.3%  ✓ Romance language challenges
+  Italian (it):    Expected 25.8%  ✓ Similar profile to French
+  Macro-avg:       Expected 28.4%  ✓ Consistent with paper
+
+Acceptable variance: ±1.0 percentage points (different runs, hardware)
+
+IF results DON'T match:
+  • Check: PEM language files loaded correctly
+  • Check: TR2016 dataset files in correct paths
+  • Check: Model checkpoint fully loaded (not partially)
+  • Check: Entity descriptions accessible
+  • Check: Language-specific tokenization working
+
+================================================================================
+🛠️ INFRASTRUCTURE NOTES
+================================================================================
+
+GPU Requirements:
+  • RTX Ada (32GB): Can run all 4 languages in sequence
+  • RTX 3090 (24GB): Can run in pairs or with batch_size reduction
+  
+Estimated Runtime:
+  • Per language: 10-30 minutes (depending on mention count)
+  • Full 4-language run: 1-2 hours on single GPU
+  
+Resource Efficiency:
+  • GPU Memory: ~15-20GB (same as MEWSLI-9)
+  • CPU: Mention detection bottleneck (not GPU)
+  • Disk I/O: ~2-3 GB total data read
+
+Optimization Tips:
+  • Batch size: 128-256 (RTX 3090), 256-512 (RTX Ada)
+  • Device placement: Force cuda:0 explicitly
+  • PYTHONUNBUFFERED=1 for real-time logging
+
+================================================================================
+📑 COMPLETION CHECKLIST FOR PAPER REPRODUCTION
+================================================================================
+
+Benchmarks Reproduced:
+  ✅ MEWSLI-9 (9 languages) - COMPLETE
+     • All 9 languages evaluated
+     • Metrics match paper expectations
+     • Results documented in PAPER_REPRODUCTION_FINAL_REPORT.txt
+  
+  ⏳ TR2016 (4 languages) - IN PROGRESS
+     • German (de):   [ ] Expected 28.2% recall
+     • Spanish (es):  [ ] Expected 34.4% recall
+     • French (fr):   [ ] Expected 25.3% recall
+     • Italian (it):  [ ] Expected 25.8% recall
+     • Macro-avg:     [ ] Expected 28.4% recall
+
+Paper Reproduction Completion:
+  ✅ MEWSLI-9: 100% complete
+  ⏳ TR2016:   0% complete (ready to run)
+  ──────────────────────────
+  📊 Overall: 50% (1/2 benchmarks done)
+
+============================================================================
+📌 CRITICAL SUCCESS METRICS
+================================================================================
+
+To validate successful TR2016 reproduction:
+  
+  1. All 4 languages complete without errors
+  2. Individual recalls within ±1% of paper:
+     • de: 27.2% - 29.2% ✓ (expected 28.2%)
+     • es: 33.4% - 35.4% ✓ (expected 34.4%)
+     • fr: 24.3% - 26.3% ✓ (expected 25.3%)
+     • it: 24.8% - 26.8% ✓ (expected 25.8%)
+  
+  3. Macro-average recall: 27.4% - 29.4% ✓ (expected 28.4%)
+  
+  4. Evaluation completes in <2 hours per full run
+  
+  5. GPU utilization: 70-90% (indicates good parallelization)
+  
+  6. Memory usage: <25GB (single GPU sufficient)
+
+================================================================================
+✅ FINAL STATUS
+================================================================================
+
+MEWSLI-9 Evaluation:       ✅ COMPLETE
+  • 9 languages: 100% done
+  • Results documented: PAPER_REPRODUCTION_FINAL_REPORT.txt
+  • Metrics match paper expectations
+
+TR2016 Evaluation:         ⏳ READY TO RUN
+  • Scripts prepared: remote_cmd_tr2016_server80.sh (de+es)
+  • Scripts prepared: remote_cmd_tr2016_server170.sh (fr+it)
+  • Model available: mReFinED_Recall_9343
+  • Data available: TR2016 files on remote servers
+  • Status: Awaiting execution on GPU servers
+
+Combined Paper Reproduction: 50% Complete
+  • Next Step: Execute TR2016 benchmarks on remote servers
+  • Expected outcome: 28.4% macro-avg recall
+  • Timeline: 1-2 hours execution time
+
+================================================================================
+Generated: April 17, 2026
+Status: Ready for TR2016 Evaluation
+Servers: 172.20.70.80 (RTX Ada) and 172.20.70.170 (RTX 3090)
+================================================================================

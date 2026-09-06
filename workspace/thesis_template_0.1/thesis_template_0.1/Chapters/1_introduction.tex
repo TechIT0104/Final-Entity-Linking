@@ -1,0 +1,42 @@
+\chapter{Introduction}
+\label{ch:introduction}
+
+\section{Background and Motivation}
+Entity Linking (EL) maps textual mentions to canonical entities in a knowledge base (KB) such as Wikipedia or Wikidata. It is a foundational capability for information extraction, question answering, and knowledge graph construction. A typical pipeline performs mention detection (MD) to identify spans and entity disambiguation (ED) to select the correct entity for each span. Modern systems rely on dense retrieval with dual-encoders and cross-encoders for re-ranking, with BLINK as a widely adopted baseline \cite{wu2020blink}.
+
+Despite strong results in English, EL becomes significantly harder in multilingual and historical settings. Multilingual corpora are uneven and noisy, and many mentions do not have hyperlinks in Wikipedia, which limits training data. Historical texts further add OCR noise, shifting language usage, and missing entities in contemporary KBs \cite{arora2024}. These challenges motivated a phased research plan: (1) reproduce and understand monolingual dense retrieval (BLINK, MVD), and (2) scale to multilingual and historical EL with mReFinED and MHEL-LLaMo \cite{mvd2023,mrefined2023,mhelllamo2026}.
+
+\section{Project Context and Phases}
+\textbf{Pre-mid-semester (brief):} We implemented BLINK and MVD to understand dense retrieval, candidate generation, and multi-view entity representations. This phase established the baseline pipeline and evaluation vocabulary \cite{mvd2023}.
+
+\textbf{Post-mid-semester (core focus):} We transitioned to multilingual and historical EL. We attempted to reproduce mReFinED \cite{mrefined2023} and documented the engineering barriers (CUDA stack, tokenizer changes, PEM format, and TR2016 offset corruption). Based on those learnings, we implemented MHEL-LLaMo, an unsupervised system that uses a bi-encoder for retrieval and an LLM for hard cases only \cite{mhelllamo2026}.
+
+\section{Problem Statement}
+The core problem is designing an EL system that:
+\begin{itemize}
+    \item scales from monolingual to multilingual and historical texts,
+    \item remains robust under noisy inputs and missing KB entries,
+    \item balances accuracy with feasible compute.
+\end{itemize}
+Dense retrieval systems struggle to represent fine-grained entity details in a single vector and degrade on low-resource languages. End-to-end MEL additionally faces limited training data and unlabelled mentions in Wikipedia.
+
+\section{Contributions}
+This thesis makes the following contributions (approximately 70 percent paper-inspired, 30 percent our engineering and tuning work):
+\begin{itemize}
+    \item A structured reproduction and analysis of BLINK and MVD, with clear baselines and implementation notes.
+    \item A detailed mReFinED reproduction pipeline for MEWSLI-9, including fixes for CUDA, tokenizer API changes, PEM format variation, dataset path wiring, and logging.
+    \item A root-cause analysis of TR2016 evaluation failures and an offset-validation fix that improves recall under corrupted mention offsets.
+    \item A full MHEL-LLaMo implementation with verified benchmark results and improvements to robustness and retrieval + prompt routing.
+    \item \textbf{Model Tuning Contribution}: A trained XGBoost confidence router that improves easy/hard sample discrimination from 70 percent baseline to 82 percent accuracy (+12 percent absolute), enabling adaptive routing without LLM retraining.
+    \item \textbf{Error Analysis \& Robust Thresholding}: Systematic error analysis revealing abbreviation and short-mention failure modes, with dataset-aware threshold calibration improving precision-recall tradeoffs.
+    \item \textbf{Hardware Adaptation}: Infrastructure engineering enabling reproducibility on a single 32 GB GPU using mixed precision, gradient accumulation, and device management fixes.
+\end{itemize}
+
+\section{Organization of the Thesis}
+The remainder of this thesis is organized as follows:
+\begin{itemize}
+    \item Chapter 2 reviews related work and summarizes key architectures.
+    \item Chapter 3 details the monolingual implementation phase (BLINK and MVD).
+    \item Chapter 4 covers multilingual experiments, mReFinED reproduction and failures, and MHEL-LLaMo improvements.
+    \item Chapter 5 concludes with findings, limitations, and future directions.
+\end{itemize}

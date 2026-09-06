@@ -1,0 +1,22 @@
+[2026-04-19 23:29:22] Watchdog started.
+[2026-04-19 23:29:23] Applied remote patch for missing is_hard handling in TR2016 reader.
+[2026-04-19 23:29:23] Restarted TR2016 (reason=missing_is_hard_column) pid=487311 log=/DATA/kmpooja/mrefined_option1/logs/tr2016_full_20260419_232923.log
+[2026-04-19 23:33:23] TR2016 completed successfully. pid=487311 log=/DATA/kmpooja/mrefined_option1/logs/tr2016_full_20260419_232923.log
+[2026-04-19 23:33:23] Watchdog exited.
+[2026-04-20 08:46:01] Watchdog started.
+[2026-04-20 08:46:02] TR2016 dataset check failed: only placeholder or empty files were found.
+[2026-04-20 08:46:02] Watchdog exited.
+[2026-04-20 09:38:43] Applied remote reader patch (is_hard handling + .mentions fallback).
+[2026-04-20 09:38:48] Watchdog started.
+[2026-04-20 09:38:49] TR2016 dataset check failed: only placeholder or empty files were found.
+[2026-04-20 09:38:49] Watchdog exited.
+[2026-04-21 02:44:20] Watchdog started.
+[2026-04-21 02:44:20] Started initial TR2016 job pid=794715 log=/DATA/kmpooja/mrefined_option1/logs/tr2016_full_20260421_024420.log
+[2026-04-21 02:50:21] Process was not running; restarted pid=797008 log=/DATA/kmpooja/mrefined_option1/logs/tr2016_full_20260421_025021.log
+[2026-04-21 02:56:22] Process was not running; restarted pid=799159 log=/DATA/kmpooja/mrefined_option1/logs/tr2016_full_20260421_025622.log
+[2026-04-21 03:02:22] Process was not running; restarted pid=801334 log=/DATA/kmpooja/mrefined_option1/logs/tr2016_full_20260421_030222.log
+[2026-04-21 03:08:23] Process was not running; restarted pid=803482 log=/DATA/kmpooja/mrefined_option1/logs/tr2016_full_20260421_030823.log
+[2026-04-21 03:16:24] Process was not running; restarted pid=806348 log=/DATA/kmpooja/mrefined_option1/logs/tr2016_full_20260421_031623.log
+[2026-04-21 03:22:24] Process was not running; restarted pid=808505 log=/DATA/kmpooja/mrefined_option1/logs/tr2016_full_20260421_032224.log
+[2026-04-21 03:32:25] Process stopped and max restarts reached.
+[2026-04-21 03:32:25] Watchdog exited.

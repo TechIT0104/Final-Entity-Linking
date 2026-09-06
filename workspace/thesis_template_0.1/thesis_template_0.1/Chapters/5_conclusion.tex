@@ -1,0 +1,18 @@
+\chapter{Conclusion and Future Work}
+\label{ch:conclusion}
+
+\section{Summary of the Work}
+This thesis documents a full implementation cycle for entity linking, starting from monolingual dense retrieval and moving to multilingual and historical settings. We implemented BLINK and MVD to establish a strong baseline understanding of candidate retrieval and multi-view distillation. We then reproduced MEWSLI-9 evaluation for mReFinED with multiple compatibility fixes and uncovered a data integrity issue in TR2016 that materially impacts reported recall.
+
+Finally, we implemented MHEL-LLaMo and reproduced best-setting results across twelve historical datasets. The confidence-based routing between a bi-encoder retriever and an LLM enabled robust linking with reduced compute cost, while strict evaluation exposed coverage gaps that are hidden by legacy metrics.
+
+\section{Limitations}
+The main limitations are external: (1) a likely mismatch between the available mReFinED checkpoint and the paper's original model, and (2) corrupted mention offsets in TR2016 that prevent full reproduction. These constraints are documented and do not affect the validity of MEWSLI-9 and MHEL-LLaMo reproductions.
+
+\section{Future Work}
+Future work can pursue three directions:
+\begin{enumerate}
+	\item Regenerate TR2016 mention offsets from raw sources and re-evaluate mReFinED end-to-end.
+	\item Explore reinforcement learning or learned calibration for the SLM/LLM confidence threshold to improve routing under domain shift.
+	\item Extend the LLM prompt chain with structured KB evidence (relations, types) to improve NIL prediction.
+\end{enumerate}

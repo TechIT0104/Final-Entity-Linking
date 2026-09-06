@@ -1,0 +1,5 @@
+{
+    "chat.useClaudeHooks": true,
+    "workbench.settings.alwaysShowAdvancedSettings": true,
+    "github.copilot.chat.debug.promptOverrideString": ""
+}
